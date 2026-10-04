@@ -124,7 +124,8 @@ Criollo/
 └── docs/                       # Documentación y seguimiento (Alex)
     ├── El_proyecto.md          # Resumen técnico extenso y diagrama E-R
     ├── reglas_negocio.md       # Reglas de negocio operativas y validaciones
-    ├── manual_tecnico.md       # Manual de despliegue y usuario
+    ├── manual_tecnico.md       # Manual técnico y de usuario paso a paso
+    ├── informe_auditoria_integracion.md # Informe de auditoría e integración MVC
     ├── rol_alex.md             # Funciones de QA y Líder
     ├── rol_bolivar.md          # Funciones de Vistas
     ├── rol_israel.md           # Funciones de Controladores
@@ -136,6 +137,8 @@ Criollo/
 ## 📖 Documentación Detallada
 Para conocer a fondo las reglas técnicas, los contratos de comunicación y la matriz de responsabilidades, consulta los archivos en la carpeta [docs/](file:///C:/Users/ACER/Desktop/Criollo/docs/):
 - **Visión General y Diagrama E-R:** [El_proyecto.md](file:///C:/Users/ACER/Desktop/Criollo/docs/El_proyecto.md)
+- **Manual Técnico y de Usuario:** [manual_tecnico.md](file:///C:/Users/ACER/Desktop/Criollo/docs/manual_tecnico.md)
+- **Informe de Auditoría e Integración:** [informe_auditoria_integracion.md](file:///C:/Users/ACER/Desktop/Criollo/docs/informe_auditoria_integracion.md)
 - **Reglas de Negocio del Sistema:** [reglas_negocio.md](file:///C:/Users/ACER/Desktop/Criollo/docs/reglas_negocio.md)
 - **Rol de Jybran (Base de Datos):** [rol_jybran.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_jybran.md)
 - **Rol de Bolivar (Vistas):** [rol_bolivar.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_bolivar.md)
