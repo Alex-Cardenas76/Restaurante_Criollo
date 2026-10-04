@@ -31,6 +31,9 @@ class DashboardView(ctk.CTkFrame):
         self.btn_pedidos = ctk.CTkButton(self.frame_sidebar, text="Caja y Pedidos", command=lambda: self._navegar("pedidos"))
         self.btn_pedidos.pack(padx=20, pady=10, fill="x")
 
+        self.btn_logout = ctk.CTkButton(self.frame_sidebar, text="Cerrar Sesión", fg_color="#d9534f", hover_color="#c9302c", command=lambda: self._navegar("logout"))
+        self.btn_logout.pack(padx=20, pady=(30, 10), fill="x")
+
         # Contenedor dinámico principal
         self.frame_contenido = ctk.CTkFrame(self, corner_radius=0)
         self.frame_contenido.grid(row=1, column=1, sticky="nsew")

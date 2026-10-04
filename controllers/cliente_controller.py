@@ -1,32 +1,51 @@
 import re
+from models import cliente_model
 
 class ClienteController:
-    def __init__(self, modelo_cliente, vista_mensajes):
-        self.modelo_cliente = modelo_cliente
-        self.vista_mensajes = vista_mensajes
+    def __init__(self, vista):
+        self.vista = vista
 
-    def registrar_cliente(self, dni, nombres, telefono):
+    def cargar_clientes(self):
+        try:
+            clientes = cliente_model.listar_clientes()
+            # Formatear tuplas: (dni, nombre, telefono) para la tabla de la vista
+            filas = [(c[2], c[1], c[3]) for c in clientes]
+            self.vista.poblar_tabla(filas)
+        except Exception as error:
+            self.vista.mostrar_error(f"Error al listar clientes: {error}")
+
+    def guardar_cliente(self):
+        datos = self.vista.get_datos_formulario()
+        dni = datos.get("dni", "").strip()
+        nombres = datos.get("nombres", "").strip()
+        telefono = datos.get("telefono", "").strip()
+
+        # Validaciones de reglas de negocio
         if not re.fullmatch(r'\d{8}', dni):
-            self.vista_mensajes.mostrar_error("El DNI debe tener exactamente 8 números.")
-            return False
+            self.vista.mostrar_error("El DNI debe tener exactamente 8 dígitos numéricos.")
+            return
 
-        if not re.fullmatch(r'[A-Za-zÁ-Úá-úÑñ\s]+', nombres):
-            self.vista_mensajes.mostrar_error("El nombre contiene caracteres inválidos.")
-            return False
+        if len(nombres) < 3 or not re.fullmatch(r'[A-Za-zÁ-Úá-úÑñ\s]+', nombres):
+            self.vista.mostrar_error("El nombre debe tener al menos 3 caracteres y solo letras.")
+            return
 
         if telefono and not re.fullmatch(r'9\d{8}', telefono):
-            self.vista_mensajes.mostrar_error("El teléfono debe ser un celular válido de 9 dígitos.")
-            return False
+            self.vista.mostrar_error("El teléfono debe ser un celular válido de 9 dígitos que inicie con 9.")
+            return
 
-        datos_limpios = {
-            "dni": dni, 
-            "nombres": nombres.strip(), 
-            "telefono": telefono
-        }
-        
-        exito = self.modelo_cliente.insertar_cliente(datos_limpios)
+        try:
+            # Comprobar unicidad de DNI
+            existente = cliente_model.buscar_cliente_por_dni(dni)
+            if existente:
+                self.vista.mostrar_error("El DNI ya se encuentra registrado en el sistema.")
+                return
 
-        if exito:
-            self.vista_mensajes.mostrar_info("Cliente registrado correctamente.")
-            return True
-        return False
+            nuevo_id = cliente_model.insertar_cliente(nombres, dni, telefono)
+            if nuevo_id:
+                self.vista.mostrar_exito("Cliente registrado correctamente.")
+                self.vista.limpiar_formulario()
+                self.cargar_clientes()
+            else:
+                self.vista.mostrar_error("No se pudo registrar el cliente en la base de datos.")
+        except Exception as error:
+            self.vista.mostrar_error(f"Error al guardar cliente: {error}")

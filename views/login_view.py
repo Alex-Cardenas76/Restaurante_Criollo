@@ -35,12 +35,7 @@ class LoginView(ctk.CTkFrame):
             self.controlador.manejar_login()
 
     def get_usuario(self) -> str:
-        texto_usuario = self.entry_usuario.get().strip()
-        if not texto_usuario:
-            return ""
-        if "@" not in texto_usuario:
-            return f"{texto_usuario}@gmail.com"
-        return texto_usuario
+        return self.entry_usuario.get().strip()
 
     def get_password(self) -> str:
         return self.entry_password.get()

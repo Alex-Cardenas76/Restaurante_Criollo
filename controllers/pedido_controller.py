@@ -1,66 +1,149 @@
 from decimal import Decimal
-from datetime import datetime
+from models import cliente_model, producto_model, pedido_model
 
 class PedidoController:
-    def __init__(self, modelo_pedido, vista_mensajes):
-        self.carrito = [] 
-        self.modelo_pedido = modelo_pedido
-        self.vista_mensajes = vista_mensajes 
-        self.sesion_activa = None 
+    def __init__(self, vista, sesion_activa=None):
+        self.vista = vista
+        self.sesion_activa = sesion_activa or {"id_usuario": 1, "usuario": "admin", "rol": "administrador"}
+        self.carrito = []
+        self.clientes_map = {}
+        self.platos_map = {}
 
-    def agregar_plato(self, id_producto, nombre, cantidad, precio_unitario, nota_plato=""):
+    def establecer_sesion(self, sesion):
+        self.sesion_activa = sesion
+
+    def cargar_datos_iniciales(self):
         try:
-            cantidad_int = int(cantidad)
-            if cantidad_int <= 0:
-                self.vista_mensajes.mostrar_advertencia("La cantidad debe ser mayor a cero.")
-                return False
-        except ValueError:
-            self.vista_mensajes.mostrar_error("La cantidad debe ser un número entero.")
-            return False
+            # 1. Cargar clientes
+            clientes = cliente_model.listar_clientes()
+            self.clientes_map = {}
+            for c in clientes:
+                etiqueta = f"{c[1]} (DNI: {c[2]})"
+                self.clientes_map[etiqueta] = c[0]
+            self.vista.poblar_clientes(clientes)
 
-        precio_exacto = Decimal(str(precio_unitario))
-        subtotal_exacto = precio_exacto * cantidad_int
+            # 2. Cargar platos disponibles para la carta
+            platos = producto_model.listar_productos_disponibles()
+            self.platos_map = {}
+            for p in platos:
+                etiqueta = f"{p[0]} - {p[1]} (S/. {float(p[3]):.2f})"
+                self.platos_map[etiqueta] = {
+                    "id": p[0],
+                    "nombre": p[1],
+                    "precio": Decimal(str(p[3]))
+                }
+            self.vista.poblar_platos(platos)
+
+        except Exception as error:
+            self.vista.mostrar_error(f"Error al cargar datos de pedidos: {error}")
+
+    def agregar_plato_carrito(self):
+        plato_seleccionado = self.vista.get_plato_seleccionado()
+        cant_str = self.vista.get_cantidad()
+        nota = self.vista.get_nota()
+
+        if plato_seleccionado not in self.platos_map:
+            self.vista.mostrar_error("Por favor, seleccione un plato válido de la carta.")
+            return
+
+        try:
+            cantidad = int(cant_str)
+            if cantidad < 1:
+                self.vista.mostrar_error("La cantidad debe ser al menos 1.")
+                return
+        except ValueError:
+            self.vista.mostrar_error("La cantidad debe ser un número entero válido.")
+            return
+
+        info_plato = self.platos_map[plato_seleccionado]
+        precio_unitario = info_plato["precio"]
+        subtotal = precio_unitario * Decimal(cantidad)
 
         item = {
-            "id_producto": id_producto, 
-            "nombre": nombre,
-            "cantidad": cantidad_int,
-            "precio_unitario": precio_exacto,
-            "subtotal": subtotal_exacto,
-            "nota_plato": nota_plato
+            "id_producto": info_plato["id"],
+            "nombre": info_plato["nombre"],
+            "cantidad": cantidad,
+            "precio_unitario": precio_unitario,
+            "subtotal": subtotal,
+            "nota_plato": nota
         }
-        
+
         self.carrito.append(item)
-        return True 
+        self._actualizar_interfaz_carrito()
 
-    def calcular_total(self):
-        return sum((item["subtotal"] for item in self.carrito), Decimal('0.00'))
+    def quitar_plato_carrito(self):
+        valores = self.vista.get_item_carrito_seleccionado()
+        if not valores:
+            self.vista.mostrar_error("Seleccione un plato de la tabla del carrito para eliminar.")
+            return
 
-    def consolidar_pedido(self, id_cliente, numero_mesa, metodo_pago):
+        id_producto_quitar = int(valores[0])
+        # Remover la primera ocurrencia de ese plato en el carrito
+        for i, item in enumerate(self.carrito):
+            if item["id_producto"] == id_producto_quitar:
+                del self.carrito[i]
+                break
+
+        self._actualizar_interfaz_carrito()
+
+    def _actualizar_interfaz_carrito(self):
+        total_monto = sum((item["subtotal"] for item in self.carrito), Decimal('0.00'))
+        total_cant = sum(item["cantidad"] for item in self.carrito)
+        self.vista.poblar_carrito(self.carrito, total_monto, total_cant)
+
+    def manejar_generar_ticket(self):
         if not self.carrito:
-            self.vista_mensajes.mostrar_advertencia("El carrito está vacío.")
-            return False
+            self.vista.mostrar_error("No hay platos en el carrito para cobrar.")
+            return
 
-        if not id_cliente or not numero_mesa:
-            self.vista_mensajes.mostrar_advertencia("Faltan datos del cliente o mesa.")
-            return False
+        mesa = self.vista.get_mesa()
+        if not mesa:
+            self.vista.mostrar_error("Debe indicar el número de mesa o barra.")
+            return
 
-        cabecera_pedido = {
-            "id_cliente": id_cliente,
-            "id_usuario": self.sesion_activa.get("id_usuario"),
-            "fecha": datetime.now(), 
-            "numero_mesa": numero_mesa,
-            "total": self.calcular_total(),
-            "metodo_pago": metodo_pago,
-            "estado": "Completado"
-        }
+        cliente_str = self.vista.get_cliente_seleccionado()
+        id_cliente = self.clientes_map.get(cliente_str)
+        if not id_cliente:
+            # Tomar el primer cliente o fallback a 1
+            id_cliente = list(self.clientes_map.values())[0] if self.clientes_map else 1
 
-        exito = self.modelo_pedido.guardar_transaccion(cabecera_pedido, self.carrito)
-        
-        if exito:
-            self.carrito.clear() 
-            self.vista_mensajes.mostrar_info("Cobro realizado y guardado con éxito.")
-            return True
-        else:
-            self.vista_mensajes.mostrar_error("Error al guardar en la base de datos.")
-            return False
+        metodo_pago = self.vista.get_metodo_pago()
+        usuario_id = self.sesion_activa.get("id_usuario", 1)
+        total = sum((item["subtotal"] for item in self.carrito), Decimal('0.00'))
+
+        detalles = [
+            (
+                item["id_producto"],
+                item["cantidad"],
+                item["precio_unitario"],
+                item["subtotal"],
+                item.get("nota_plato") or None
+            )
+            for item in self.carrito
+        ]
+
+        try:
+            pedido_id = pedido_model.insertar_pedido(
+                cliente_id=id_cliente,
+                usuario_id=usuario_id,
+                mesa=mesa,
+                metodo_pago=metodo_pago,
+                total=total,
+                detalles=detalles,
+                estado="Pagado"
+            )
+
+            if pedido_id:
+                self.carrito.clear()
+                self.vista.limpiar_formulario()
+                self.vista.mostrar_exito(
+                    f"¡Ticket generado y cobrado exitosamente!\n\n"
+                    f"Comprobante N°: {pedido_id}\n"
+                    f"Mesa: {mesa}\n"
+                    f"Método de pago: {metodo_pago}\n"
+                    f"Total Pagado: S/. {total:.2f}"
+                )
+            else:
+                self.vista.mostrar_error("No se pudo registrar el pedido en la base de datos.")
+        except Exception as error:
+            self.vista.mostrar_error(f"Error en la transacción del pedido: {error}")
