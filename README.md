@@ -40,8 +40,8 @@ Sigue estos pasos en tu computadora para configurar el entorno de trabajo sin co
 ### 1. Clonar el repositorio
 Abre una terminal y clona el proyecto:
 ```bash
-git clone <URL_DEL_REPOSITORIO>
-cd Criollo
+git clone https://github.com/Alex-Cardenas76/Restaurante_Criollo.git
+cd Restaurante_Criollo
 ```
 
 ### 2. Crear y activar el entorno virtual (`venv`)
@@ -84,6 +84,11 @@ Con la base de datos iniciada y el entorno virtual activo:
 ```powershell
 python main.py
 ```
+
+### 7. Credenciales de acceso de prueba:
+* **Usuario:** `admin`
+* **Contraseña:** `admin123`
+*(Rol: Administrador)*
 
 ---
 
