@@ -3,68 +3,94 @@
 ---
 
 ## 1. Misión del Rol
-Asegurar la calidad, estabilidad técnica y formalización documental de "El Rincón Criollo". Alex es el responsable de certificar que el Producto Mínimo Viable (MVP) alcance el **70% de operatividad funcional**, auditando tanto el comportamiento de la interfaz como el rigor matemático de los cálculos en memoria RAM, la resiliencia de la conexión a MySQL en XAMPP y redactando el manual técnico que guiará el despliegue del sistema.
+Asegurar la calidad, estabilidad técnica, coherencia arquitectónica y formalización documental integral de "El Rincón Criollo". Alex es el líder del proyecto y responsable de certificar que el sistema cumpla al 100% con los requerimientos operativos de un restaurante comercial, auditando que la interfaz de Bolivar sea intuitiva y ergonómica, que la lógica financiera y transaccional de Israel en memoria RAM sea exacta, que la persistencia en MySQL gestionada por Jybran preserve la integridad referencial de los datos, y redactando el manual técnico oficial que guiará el despliegue del software.
 
 ---
 
 ## 2. Territorio Asignado y Herramientas Tecnológicas
 
-### Archivos y Carpetas:
-- `docs/reglas_negocio.md` (Custodia y verificación del cumplimiento de las reglas operativas).
-- `docs/manual_tecnico.md` (Manual de arquitectura MVC, modelo E-R, stack tecnológico y despliegue).
-- `docs/` (Reportes de control de calidad, bitácoras de incidencias y actas de aceptación).
+### Archivos y Carpetas Asignadas:
+- `docs/reglas_negocio.md` (Custodia, redacción y verificación del cumplimiento de todas las reglas operativas).
+- `docs/manual_tecnico.md` (Manual oficial de arquitectura MVC, diagrama E-R, diccionario de datos, guía de despliegue y manual de usuario).
+- `docs/informe_auditoria_integracion.md` (Bitácora de auditoría técnica y aseguramiento de la integridad del repositorio).
+- `docs/El_proyecto.md` (Especificación de objetivos y alcance general del sistema).
+- `docs/rol_*.md` (Documentación formal de funciones y responsabilidades del equipo).
 
 ### Herramientas y Aspectos Técnicos a Auditar:
-- **Auditoría de Componentes Visuales:** Verificar la correcta representación de ventanas con `customtkinter`, el funcionamiento fluido de las tablas `ttk.Treeview` con sus barras de desplazamiento y la adecuada aparición de diálogos modales nativos (`tkinter.messagebox`).
-- **Auditoría de Precisión Financiera:** Probar que los cálculos de precios, subtotales y totales utilicen la precisión exacta del módulo `Decimal`, garantizando que no existan desajustes de céntimos por punto flotante.
-- **Auditoría de Expresiones Regulares (`re`):** Introducir datos erróneos a propósito (letras en el DNI, DNIs de 7 o 9 dígitos) para verificar que las reglas de negocio intercepten los errores antes de tocar la base de datos.
-- **Auditoría de Resiliencia de Base de Datos:** Comprobar el comportamiento del sistema ante caídas del servicio MySQL en XAMPP, validando que el conector `mysql-connector-python` atrape las excepciones mediante `mysql.connector.errors` y notifique amigablemente al usuario sin provocar cierres inesperados.
-- **Entorno de Verificación:** Uso de `phpMyAdmin` o `MySQL Workbench` para comprobar de primera mano que las ventas registradas se reflejen fielmente en las tablas `PEDIDOS` y `DETALLE_PEDIDOS`.
+- **Auditoría de Componentes Visuales:** Verificar la adecuada jerarquía visual con `customtkinter`, la presencia de formularios modales desacoplados (`CTkToplevel`) para evitar el amontonamiento de datos, la legibilidad de botones (`height=44`) y el correcto desplazamiento en tablas `ttk.Treeview`.
+- **Auditoría de Precisión Financiera en RAM:** Probar que las operaciones de multiplicación (cantidad $\times$ precio) y suma acumulada del total utilicen con rigor el módulo `Decimal`, garantizando discrepancia cero ($S/. 0.00$ de error) por redondeo de coma flotante.
+- **Auditoría de Integridad Contable y Validaciones:** Introducir datos no válidos a propósito (DNIs con letras o longitudes distintas a 8 dígitos, precios negativos) para verificar que sean bloqueados antes de tocar MySQL, y validar que ningún plato con ventas registradas pueda ser eliminado físicamente.
+- **Auditoría de Transaccionalidad en Base de Datos:** Comprobar en `phpMyAdmin` que los pedidos y sus detalles se inserten en bloque atómico (`commit`), y que ante un fallo no queden registros huérfanos (`rollback`).
+- **Auditoría de Gestión de Salón:** Verificar que las mesas con comandas pendientes queden bloqueadas como ocupadas y que se liberen de forma inmediata al confirmarse el cobro.
 
 ---
 
 ## 3. Lo que DEBE hacer (Responsabilidades Principales)
 
-1. **Auditoría de Cumplimiento de las Reglas de Negocio (`reglas_negocio.md`):**
-   - Verificar de forma metódica que cada regla de negocio se cumpla en el sistema para certificar el 70% del MVP:
-     - **Módulo de Acceso:** Validación de login exitoso, rechazo ante contraseña equivocada y verificación de que se asigne el `id_usuario` a la sesión.
-     - **Módulo de Clientes:** Prueba de expresiones regulares (bloqueo ante DNI con menos o más de 8 dígitos, o con letras) y confirmación visual en el `Treeview`.
-     - **Módulo de Productos:** Rechazo de precios negativos o cero, conmutación del estado de disponibilidad (`disponible`) y refresco de la carta.
-     - **Módulo de Caja y Ventas (Núcleo en RAM y Transacción):**
-       - Prueba de suma decimal acumulada en el carrito: verificar que la multiplicación de cantidad por precio unitario no arroje errores de aproximación.
-       - Validación de que no se permita cobrar si el carrito está vacío, si falta el número de mesa o el método de pago.
-       - Auditoría de persistencia: comprobar en `phpMyAdmin` que al confirmar la venta se genere el registro en `PEDIDOS` (con fecha y hora exacta de `datetime.now()`) y los renglones correspondientes en `DETALLE_PEDIDOS` (conservando las instrucciones de `nota_plato`).
-   - Calificar cada escenario como Aprobado, Rechazado o Bloqueado.
+1. **Auditoría Integral de Reglas de Negocio (`reglas_negocio.md`):**
+   - Verificar de forma exhaustiva cada directriz operativa del restaurante:
+     - **Módulo de Acceso (RN-ACC-01 a 04):** Validación de credenciales, bloqueo ante clave errónea y retención en sesión del `id_usuario`, nombre y rol para trazabilidad.
+     - **Módulo de Clientes (RN-CLI-01 a 05):** Validación estricta de DNI de 8 dígitos numéricos, nombres obligatorios y disponibilidad del cliente genérico para ventas al paso.
+     - **Módulo de Carta y Productos (RN-PRO-01 a 06):** Categorías oficiales, visualización en caja de solo platos disponibles, edición dinámica de la carta, conmutación de stock (`Disponible` / `Agotado`) y bloqueo de borrado de platos con ventas históricas.
+     - **Módulo de Caja, Mesas y Comandas (RN-PED-01 a 12):**
+       - Asignación obligatoria de mesa y validación de mesas ocupadas (`Mesa 01 a 06`).
+       - Cálculos exactos en memoria RAM con `Decimal` para subtotales y total general.
+       - Soporte para flujo dual: `Guardar Comanda (Pendiente)` para atención en salón y `Cobrar al Instante (Pagado)` para despacho rápido.
+       - Cierre y cobro de comandas pendientes desde el Historial de Ventas, garantizando la liberación automática de la mesa asignada.
 
-2. **Redacción del Manual Técnico del Sistema (`manual_tecnico.md`):**
-   - Documentar la arquitectura Modelo-Vista-Controlador (MVC) y la separación de responsabilidades.
-   - Diagramar y explicar el Modelo Entidad-Relación (E-R) de las 5 tablas y sus relaciones de cardinalidad.
-   - Describir la pila tecnológica completa:
-     - Interfaz: `customtkinter`, `ttk.Treeview`, `tkinter.messagebox`, `Pillow`.
-     - Lógica: `Decimal`, `re`, `datetime`, estructuras en RAM.
-     - Persistencia: `mysql-connector-python`, MySQL vía XAMPP, `schema.sql`.
-   - Incluir la guía de instalación y puesta en marcha:
-     - Instalación de dependencias mediante `pip install -r requirements.txt`.
-     - Inicio de servicios en el panel de control de XAMPP (Apache y MySQL).
-     - Importación del archivo `schema.sql` en phpMyAdmin.
-     - Ejecución del sistema mediante `python main.py`.
-   - Incorporar la guía de uso operativo para el personal del restaurante.
+2. **Redacción y Mantenimiento del Manual Técnico Oficial (`manual_tecnico.md`):**
+   - Documentar la arquitectura MVC detallando la separación de capas (Modelo $\leftrightarrow$ Controlador $\leftrightarrow$ Vista).
+   - Elaborar y mantener el diagrama Entidad-Relación (E-R) en formato Mermaid con las 5 tablas relacionales y sus llaves foráneas.
+   - Publicar el diccionario de datos exhaustivo de las tablas `usuarios`, `clientes`, `productos`, `pedidos` y `detalle_pedidos` (tipos de datos, restricciones de nulidad y descripciones).
+   - Detallar la guía paso a paso de instalación y despliegue en Windows con XAMPP: clonación, entorno virtual `.venv`, instalación de `requirements.txt`, configuración de `.env`, importación de `schema.sql` y comando de arranque `python main.py`.
+   - Redactar la Guía de Usuario ilustrada que enseñe a operar cada módulo del software al personal del restaurante.
 
-3. **Gestión y Reporte de Incidencias (Bugs):**
-   - Levantar reportes técnicos detallados especificando los pasos para reproducir la falla, la librería involucrada y asignando la tarea al miembro competente:
-     - Problemas en `Treeview`, formularios o estilos -> **Bolivar**
-     - Fallos en cálculos de `Decimal`, expresiones regulares de `re` o carrito en RAM -> **Israel**
-     - Errores de sintaxis SQL, llaves foráneas o transacciones fallidas -> **Jybran**
+3. **Gestión de Calidad, Pruebas y Reporte de Incidencias:**
+   - Realizar pruebas de extremo a extremo (End-to-End) simulando el día a día de un cajero y un mozo en el restaurante.
+   - Registrar y asignar incidencias a los responsables específicos:
+     - Fallos visuales, estilos o modales $\rightarrow$ **Bolivar (Vistas)**.
+     - Fallos en validaciones `re`, cálculos `Decimal` o flujo de mesas $\rightarrow$ **Israel (Controlador)**.
+     - Errores de sintaxis SQL, llaves foráneas o conexión a XAMPP $\rightarrow$ **Jybran (Modelo/BD)**.
 
 ---
 
-## 4. Lo que NO DEBE hacer (Límites para no chocar con el equipo)
+## 4. Lo que NO DEBE hacer (Límites Arquitectónicos)
 
-- **NO modificar el código fuente para subsanar errores:** Su responsabilidad es auditar, reportar y validar la corrección, nunca editar los archivos de sus compañeros.
-- **NO alterar el esquema de la base de datos de forma unilateral:** Cualquier ajuste sobre las tablas o tipos de datos debe ser coordinado con Jybran.
-- **NO alterar las dependencias en `requirements.txt` sin previo consenso.**
+- **NO alterar el código de los módulos para corregir fallos:** Su rol es detectar anomalías, levantar el informe técnico y certificar la corrección implementada por sus compañeros.
+- **NO modificar el esquema relacional de forma unilateral:** Cualquier ajuste sobre las tablas debe ser coordinado y aprobado en conjunto con Jybran.
+- **NO interferir en las decisiones de diseño estético o algorítmico interno** de sus compañeros, siempre y cuando cumplan con las reglas de negocio y los contratos de integración.
 
 ---
 
 ## 5. Criterio de Certificación Final
-Alex emitirá la aprobación definitiva cuando la matriz de pruebas confirme que el ciclo comercial se ejecuta con fluidez, sin errores de punto flotante en caja, con datos protegidos contra inyecciones e inconsistencias, y con el manual técnico concluido para la entrega final.
+
+Alex emitirá el dictamen de aprobación formal del sistema cuando se cumplan las siguientes condiciones:
+1. El ciclo comercial completo (toma de comanda $\rightarrow$ mesa ocupada $\rightarrow$ cobro desde historial $\rightarrow$ mesa liberada) opere sin inconsistencias.
+2. No existan errores de redondeo de punto flotante en ninguna operación contable.
+3. El manual técnico y las reglas de negocio se encuentren totalmente documentados y sincronizados con el software real.
+
+---
+
+## 6. Lista de Documentos, Auditorías y Criterios de Éxito al Culminar su Parte
+
+Para considerar su módulo 100% culminado y operativo, Alex debe entregar elaborados, auditados y validados los siguientes entregables:
+
+### 1. Manual Técnico Oficial (`docs/manual_tecnico.md`):
+* [x] Diagrama arquitectónico MVC y explicación del flujo de eventos.
+* [x] Diagrama Entidad-Relación (E-R) formal en código Mermaid con cardinalidades.
+* [x] Diccionario de datos de las 5 tablas relacionales con campos, tipos y claves.
+* [x] Guía de despliegue paso a paso para Windows y XAMPP (`pip`, `.venv`, MySQL, `main.py`).
+* [x] Manual de Usuario detallado que guíe el inicio de sesión, registro de clientes, gestión de carta, toma de comandas y cobro en historial.
+
+### 2. Especificación de Reglas de Negocio (`docs/reglas_negocio.md`):
+* [x] Reglas de Acceso y Trazabilidad de Sesión (`RN-ACC-01` a `RN-ACC-04`).
+* [x] Reglas de Clientes y Unicidad de DNI (`RN-CLI-01` a `RN-CLI-05`).
+* [x] Reglas de Productos, Disponibilidad, Edición y Protección Contable (`RN-PRO-01` a `RN-PRO-06`).
+* [x] Reglas de Pedidos, Carrito en RAM con Decimal, Mesas Ocupadas y Flujo Dual (`RN-PED-01` a `RN-PED-12`).
+* [x] Matriz de responsabilidades por integrante del equipo.
+
+### 3. Matriz de Auditoría y Control de Calidad (QA):
+* [x] Certificación de que ningún plato con comandas previas pueda eliminarse físicamente de la base de datos.
+* [x] Certificación de que no se puedan abrir comandas simultáneas en una mesa ocupada.
+* [x] Certificación de que la comanda cobrada libere la mesa inmediatamente en la interfaz.
+* [x] Certificación de exactitud monetaria en `Decimal` para compras múltiples y subtotales.

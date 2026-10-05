@@ -2,10 +2,13 @@ import customtkinter as ctk
 from tkinter import ttk, messagebox
 
 class ModalFormularioProducto(ctk.CTkToplevel):
-    def __init__(self, parent, on_guardar_callback):
+    def __init__(self, parent, on_guardar_callback, producto=None):
         super().__init__(parent)
-        self.title("Registrar Nuevo Plato Criollo")
-        self.geometry("460x420")
+        self.producto = producto
+        es_edicion = producto is not None
+
+        self.title("Editar Plato Criollo" if es_edicion else "Registrar Nuevo Plato Criollo")
+        self.geometry("490x460")
         self.resizable(False, False)
         self.on_guardar_callback = on_guardar_callback
 
@@ -14,8 +17,8 @@ class ModalFormularioProducto(ctk.CTkToplevel):
         self.grab_set()
 
         self.update_idletasks()
-        x = parent.winfo_rootx() + (parent.winfo_width() // 2) - 230
-        y = parent.winfo_rooty() + (parent.winfo_height() // 2) - 210
+        x = parent.winfo_rootx() + (parent.winfo_width() // 2) - 245
+        y = parent.winfo_rooty() + (parent.winfo_height() // 2) - 230
         self.geometry(f"+{x}+{y}")
 
         self.frame_contenido = ctk.CTkFrame(self, corner_radius=15)
@@ -23,36 +26,49 @@ class ModalFormularioProducto(ctk.CTkToplevel):
 
         self.lbl_titulo = ctk.CTkLabel(
             self.frame_contenido, 
-            text="Nuevo Plato / Bebida", 
-            font=("Helvetica", 18, "bold")
+            text=f"Editar Plato #{producto['id']}" if es_edicion else "Nuevo Plato / Bebida", 
+            font=("Helvetica", 20, "bold")
         )
         self.lbl_titulo.pack(pady=(15, 15))
 
-        self.lbl_nombre = ctk.CTkLabel(self.frame_contenido, text="Nombre del Plato:", font=("Helvetica", 12, "bold"))
-        self.lbl_nombre.pack(anchor="w", padx=25, pady=(0, 2))
-        self.entry_nombre = ctk.CTkEntry(self.frame_contenido, placeholder_text="Ej: Seco de Res con Frijoles", width=350, height=36)
+        self.lbl_nombre = ctk.CTkLabel(self.frame_contenido, text="Nombre del Plato:", font=("Helvetica", 13, "bold"))
+        self.lbl_nombre.pack(anchor="w", padx=25, pady=(0, 3))
+        self.entry_nombre = ctk.CTkEntry(self.frame_contenido, placeholder_text="Ej: Seco de Res con Frijoles", width=380, height=38, font=("Helvetica", 13))
         self.entry_nombre.pack(padx=25, pady=(0, 10))
+        if es_edicion:
+            self.entry_nombre.insert(0, producto.get("nombre", ""))
 
-        self.lbl_cat = ctk.CTkLabel(self.frame_contenido, text="Categoría:", font=("Helvetica", 12, "bold"))
-        self.lbl_cat.pack(anchor="w", padx=25, pady=(0, 2))
+        self.lbl_cat = ctk.CTkLabel(self.frame_contenido, text="Categoría:", font=("Helvetica", 13, "bold"))
+        self.lbl_cat.pack(anchor="w", padx=25, pady=(0, 3))
         self.combo_categoria = ctk.CTkComboBox(
             self.frame_contenido, 
             values=["Entradas", "Platos de Fondo", "Guarniciones", "Bebidas", "Postres"], 
-            width=350, 
-            height=36
+            width=380, 
+            height=38,
+            font=("Helvetica", 13)
         )
         self.combo_categoria.pack(padx=25, pady=(0, 10))
+        if es_edicion and producto.get("categoria"):
+            self.combo_categoria.set(producto["categoria"])
 
-        self.lbl_precio = ctk.CTkLabel(self.frame_contenido, text="Precio de Venta (S/.):", font=("Helvetica", 12, "bold"))
-        self.lbl_precio.pack(anchor="w", padx=25, pady=(0, 2))
-        self.entry_precio = ctk.CTkEntry(self.frame_contenido, placeholder_text="Ej: 32.00", width=350, height=36)
-        self.entry_precio.pack(padx=25, pady=(0, 12))
+        self.lbl_precio = ctk.CTkLabel(self.frame_contenido, text="Precio de Venta (S/.):", font=("Helvetica", 13, "bold"))
+        self.lbl_precio.pack(anchor="w", padx=25, pady=(0, 3))
+        self.entry_precio = ctk.CTkEntry(self.frame_contenido, placeholder_text="Ej: 32.00", width=380, height=38, font=("Helvetica", 13))
+        self.entry_precio.pack(padx=25, pady=(0, 14))
+        if es_edicion:
+            self.entry_precio.insert(0, str(producto.get("precio", "")))
 
-        self.switch_disponible = ctk.CTkSwitch(self.frame_contenido, text="Disponible para venta en comanda / caja")
-        self.switch_disponible.pack(anchor="w", padx=25, pady=(0, 18))
-        self.switch_disponible.select()
+        self.switch_disponible = ctk.CTkSwitch(self.frame_contenido, text="Disponible para venta en comanda / caja", font=("Helvetica", 13))
+        self.switch_disponible.pack(anchor="w", padx=25, pady=(0, 20))
+        if es_edicion:
+            if producto.get("disponible", True):
+                self.switch_disponible.select()
+            else:
+                self.switch_disponible.deselect()
+        else:
+            self.switch_disponible.select()
 
-        # Botones
+        # Botones de Acción (Grandes, Visibles y Ergonómicos)
         self.frame_botones = ctk.CTkFrame(self.frame_contenido, fg_color="transparent")
         self.frame_botones.pack(fill="x", padx=25, pady=(0, 10))
 
@@ -61,19 +77,21 @@ class ModalFormularioProducto(ctk.CTkToplevel):
             text="Cancelar", 
             fg_color="#6c757d", 
             hover_color="#5a6268", 
-            width=140, 
-            height=36,
+            width=160, 
+            height=44,
+            font=("Helvetica", 14, "bold"),
             command=self.destroy
         )
         self.btn_cancelar.pack(side="left")
 
         self.btn_guardar = ctk.CTkButton(
             self.frame_botones, 
-            text="Guardar Plato", 
-            fg_color="#28a745", 
-            hover_color="#218838", 
-            width=180, 
-            height=36,
+            text="Actualizar Plato" if es_edicion else "Guardar Plato", 
+            fg_color="#007bff" if es_edicion else "#28a745", 
+            hover_color="#0069d9" if es_edicion else "#218838", 
+            width=200, 
+            height=44,
+            font=("Helvetica", 14, "bold"),
             command=self._guardar
         )
         self.btn_guardar.pack(side="right")
@@ -85,6 +103,8 @@ class ModalFormularioProducto(ctk.CTkToplevel):
             "precio": self.entry_precio.get().strip(),
             "disponible": self.switch_disponible.get() == 1
         }
+        if self.producto:
+            datos["id"] = self.producto["id"]
         if self.on_guardar_callback:
             self.on_guardar_callback(datos, self)
 
@@ -97,7 +117,7 @@ class ProductosView(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
-        # Barra superior con título y botón de acción
+        # Barra superior con título y botones de acción del CRUD
         self.frame_superior = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_superior.grid(row=0, column=0, padx=20, pady=(15, 10), sticky="ew")
 
@@ -114,15 +134,54 @@ class ProductosView(ctk.CTkFrame):
             font=("Helvetica", 14), 
             text_color="gray"
         )
-        self.lbl_total.pack(side="left", padx=20)
+        self.lbl_total.pack(side="left", padx=15)
+
+        # Botones de Acciones CRUD
+        self.btn_eliminar = ctk.CTkButton(
+            self.frame_superior, 
+            text="🗑️ Eliminar", 
+            font=("Helvetica", 13, "bold"),
+            fg_color="#dc3545", 
+            hover_color="#c82333", 
+            height=38,
+            width=100,
+            command=self._clic_eliminar
+        )
+        self.btn_eliminar.pack(side="right", padx=(6, 0))
+
+        self.btn_disponibilidad = ctk.CTkButton(
+            self.frame_superior, 
+            text="🔄 Disponibilidad", 
+            font=("Helvetica", 13, "bold"),
+            fg_color="#ffc107", 
+            text_color="black",
+            hover_color="#e0a800", 
+            height=38,
+            width=135,
+            command=self._clic_disponibilidad
+        )
+        self.btn_disponibilidad.pack(side="right", padx=(6, 0))
+
+        self.btn_editar = ctk.CTkButton(
+            self.frame_superior, 
+            text="✏️ Editar Plato", 
+            font=("Helvetica", 13, "bold"),
+            fg_color="#17a2b8", 
+            hover_color="#138496", 
+            height=38,
+            width=120,
+            command=self._clic_editar
+        )
+        self.btn_editar.pack(side="right", padx=(6, 0))
 
         self.btn_nuevo = ctk.CTkButton(
             self.frame_superior, 
-            text="+ Registrar Nuevo Plato", 
+            text="+ Nuevo Plato", 
             font=("Helvetica", 13, "bold"),
-            fg_color="#007bff", 
-            hover_color="#0069d9", 
+            fg_color="#28a745", 
+            hover_color="#218838", 
             height=38,
+            width=130,
             command=self._clic_nuevo
         )
         self.btn_nuevo.pack(side="right")
@@ -157,8 +216,29 @@ class ProductosView(ctk.CTkFrame):
         if self.controlador and hasattr(self.controlador, "abrir_modal_nuevo"):
             self.controlador.abrir_modal_nuevo()
 
+    def _clic_editar(self):
+        if self.controlador and hasattr(self.controlador, "abrir_modal_editar"):
+            self.controlador.abrir_modal_editar()
+
+    def _clic_disponibilidad(self):
+        if self.controlador and hasattr(self.controlador, "conmutar_disponibilidad"):
+            self.controlador.conmutar_disponibilidad()
+
+    def _clic_eliminar(self):
+        if self.controlador and hasattr(self.controlador, "eliminar_producto_seleccionado"):
+            self.controlador.eliminar_producto_seleccionado()
+
+    def get_producto_seleccionado(self):
+        seleccion = self.tree_productos.selection()
+        if seleccion:
+            return self.tree_productos.item(seleccion[0])["values"]
+        return None
+
     def abrir_modal_registro(self, on_guardar_cb):
         return ModalFormularioProducto(self, on_guardar_cb)
+
+    def abrir_modal_edicion(self, producto_datos, on_guardar_cb):
+        return ModalFormularioProducto(self, on_guardar_cb, producto=producto_datos)
 
     def poblar_tabla(self, lista_productos):
         for fila in self.tree_productos.get_children():
@@ -172,3 +252,6 @@ class ProductosView(ctk.CTkFrame):
 
     def mostrar_exito(self, msg):
         messagebox.showinfo("Éxito - Productos", msg)
+
+    def confirmar_accion(self, titulo, mensaje) -> bool:
+        return messagebox.askyesno(titulo, mensaje)

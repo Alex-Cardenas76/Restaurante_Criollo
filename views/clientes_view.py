@@ -5,7 +5,7 @@ class ModalFormularioCliente(ctk.CTkToplevel):
     def __init__(self, parent, on_guardar_callback):
         super().__init__(parent)
         self.title("Registrar Nuevo Cliente")
-        self.geometry("450x360")
+        self.geometry("480x410")
         self.resizable(False, False)
         self.on_guardar_callback = on_guardar_callback
 
@@ -15,8 +15,8 @@ class ModalFormularioCliente(ctk.CTkToplevel):
 
         # Centrar con respecto a la ventana padre
         self.update_idletasks()
-        x = parent.winfo_rootx() + (parent.winfo_width() // 2) - 225
-        y = parent.winfo_rooty() + (parent.winfo_height() // 2) - 180
+        x = parent.winfo_rootx() + (parent.winfo_width() // 2) - 240
+        y = parent.winfo_rooty() + (parent.winfo_height() // 2) - 205
         self.geometry(f"+{x}+{y}")
 
         self.frame_contenido = ctk.CTkFrame(self, corner_radius=15)
@@ -25,36 +25,37 @@ class ModalFormularioCliente(ctk.CTkToplevel):
         self.lbl_titulo = ctk.CTkLabel(
             self.frame_contenido, 
             text="Nuevo Cliente", 
-            font=("Helvetica", 18, "bold")
+            font=("Helvetica", 20, "bold")
         )
         self.lbl_titulo.pack(pady=(15, 15))
 
-        self.lbl_dni = ctk.CTkLabel(self.frame_contenido, text="DNI (8 dígitos):", font=("Helvetica", 12, "bold"))
-        self.lbl_dni.pack(anchor="w", padx=25, pady=(0, 2))
-        self.entry_dni = ctk.CTkEntry(self.frame_contenido, placeholder_text="Ej: 72345678", width=340, height=36)
-        self.entry_dni.pack(padx=25, pady=(0, 10))
+        self.lbl_dni = ctk.CTkLabel(self.frame_contenido, text="DNI (8 dígitos):", font=("Helvetica", 13, "bold"))
+        self.lbl_dni.pack(anchor="w", padx=25, pady=(0, 3))
+        self.entry_dni = ctk.CTkEntry(self.frame_contenido, placeholder_text="Ej: 72345678", width=380, height=38, font=("Helvetica", 13))
+        self.entry_dni.pack(padx=25, pady=(0, 12))
 
-        self.lbl_nombres = ctk.CTkLabel(self.frame_contenido, text="Nombres y Apellidos:", font=("Helvetica", 12, "bold"))
-        self.lbl_nombres.pack(anchor="w", padx=25, pady=(0, 2))
-        self.entry_nombres = ctk.CTkEntry(self.frame_contenido, placeholder_text="Ej: Carlos Alberto Flores", width=340, height=36)
-        self.entry_nombres.pack(padx=25, pady=(0, 10))
+        self.lbl_nombres = ctk.CTkLabel(self.frame_contenido, text="Nombres y Apellidos:", font=("Helvetica", 13, "bold"))
+        self.lbl_nombres.pack(anchor="w", padx=25, pady=(0, 3))
+        self.entry_nombres = ctk.CTkEntry(self.frame_contenido, placeholder_text="Ej: Carlos Alberto Flores", width=380, height=38, font=("Helvetica", 13))
+        self.entry_nombres.pack(padx=25, pady=(0, 12))
 
-        self.lbl_telefono = ctk.CTkLabel(self.frame_contenido, text="Teléfono / Celular:", font=("Helvetica", 12, "bold"))
-        self.lbl_telefono.pack(anchor="w", padx=25, pady=(0, 2))
-        self.entry_telefono = ctk.CTkEntry(self.frame_contenido, placeholder_text="Ej: 987654321", width=340, height=36)
-        self.entry_telefono.pack(padx=25, pady=(0, 15))
+        self.lbl_telefono = ctk.CTkLabel(self.frame_contenido, text="Teléfono / Celular:", font=("Helvetica", 13, "bold"))
+        self.lbl_telefono.pack(anchor="w", padx=25, pady=(0, 3))
+        self.entry_telefono = ctk.CTkEntry(self.frame_contenido, placeholder_text="Ej: 987654321", width=380, height=38, font=("Helvetica", 13))
+        self.entry_telefono.pack(padx=25, pady=(0, 20))
 
-        # Botones
+        # Botones de Acción (Grandes, Visibles y Ergonómicos)
         self.frame_botones = ctk.CTkFrame(self.frame_contenido, fg_color="transparent")
-        self.frame_botones.pack(fill="x", padx=25, pady=(5, 10))
+        self.frame_botones.pack(fill="x", padx=25, pady=(0, 10))
 
         self.btn_cancelar = ctk.CTkButton(
             self.frame_botones, 
             text="Cancelar", 
             fg_color="#6c757d", 
             hover_color="#5a6268", 
-            width=140, 
-            height=36,
+            width=160, 
+            height=44,
+            font=("Helvetica", 14, "bold"),
             command=self.destroy
         )
         self.btn_cancelar.pack(side="left")
@@ -64,8 +65,9 @@ class ModalFormularioCliente(ctk.CTkToplevel):
             text="Guardar Cliente", 
             fg_color="#28a745", 
             hover_color="#218838", 
-            width=180, 
-            height=36,
+            width=200, 
+            height=44,
+            font=("Helvetica", 14, "bold"),
             command=self._guardar
         )
         self.btn_guardar.pack(side="right")

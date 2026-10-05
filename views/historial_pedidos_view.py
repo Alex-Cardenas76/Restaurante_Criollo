@@ -1,6 +1,89 @@
 import customtkinter as ctk
 from tkinter import ttk, messagebox
 
+class ModalCobrarPedido(ctk.CTkToplevel):
+    def __init__(self, parent, info_pedido, on_confirmar_callback):
+        super().__init__(parent)
+        self.title("Cobrar Pedido Pendiente")
+        self.geometry("450x330")
+        self.resizable(False, False)
+        self.info_pedido = info_pedido
+        self.on_confirmar_callback = on_confirmar_callback
+
+        self.transient(parent)
+        self.grab_set()
+
+        self.update_idletasks()
+        x = parent.winfo_rootx() + (parent.winfo_width() // 2) - 225
+        y = parent.winfo_rooty() + (parent.winfo_height() // 2) - 165
+        self.geometry(f"+{x}+{y}")
+
+        self.frame_contenido = ctk.CTkFrame(self, corner_radius=15)
+        self.frame_contenido.pack(fill="both", expand=True, padx=20, pady=20)
+
+        self.lbl_titulo = ctk.CTkLabel(
+            self.frame_contenido, 
+            text=f"Cobrar Pedido N° {info_pedido.get('id', '')}", 
+            font=("Helvetica", 18, "bold")
+        )
+        self.lbl_titulo.pack(pady=(15, 10))
+
+        lbl_desc = f"Mesa: {info_pedido.get('mesa', '')}  |  Cliente: {info_pedido.get('cliente', '')}"
+        self.lbl_sub = ctk.CTkLabel(self.frame_contenido, text=lbl_desc, font=("Helvetica", 13), text_color="gray")
+        self.lbl_sub.pack(pady=(0, 10))
+
+        self.lbl_monto = ctk.CTkLabel(
+            self.frame_contenido, 
+            text=f"MONTO A COBRAR: S/. {float(info_pedido.get('total', 0.0)):.2f}", 
+            font=("Helvetica", 16, "bold"), 
+            text_color="#2fa572"
+        )
+        self.lbl_monto.pack(pady=(0, 15))
+
+        self.lbl_metodo = ctk.CTkLabel(self.frame_contenido, text="Seleccione Método de Pago:", font=("Helvetica", 12, "bold"))
+        self.lbl_metodo.pack(anchor="w", padx=30, pady=(0, 4))
+
+        self.combo_metodo = ctk.CTkComboBox(
+            self.frame_contenido, 
+            values=["Efectivo", "Yape", "Plin", "Tarjeta"], 
+            width=330, 
+            height=36
+        )
+        self.combo_metodo.pack(padx=30, pady=(0, 20))
+
+        self.frame_botones = ctk.CTkFrame(self.frame_contenido, fg_color="transparent")
+        self.frame_botones.pack(fill="x", padx=30, pady=(0, 10))
+
+        self.btn_cancelar = ctk.CTkButton(
+            self.frame_botones, 
+            text="Cancelar", 
+            fg_color="#6c757d", 
+            hover_color="#5a6268", 
+            width=150, 
+            height=44,
+            font=("Helvetica", 14, "bold"),
+            command=self.destroy
+        )
+        self.btn_cancelar.pack(side="left")
+
+        self.btn_pagar = ctk.CTkButton(
+            self.frame_botones, 
+            text="Confirmar Pago", 
+            fg_color="#28a745", 
+            hover_color="#218838", 
+            width=180, 
+            height=44,
+            font=("Helvetica", 14, "bold"),
+            command=self._confirmar
+        )
+        self.btn_pagar.pack(side="right")
+
+    def _confirmar(self):
+        metodo = self.combo_metodo.get()
+        if self.on_confirmar_callback:
+            self.on_confirmar_callback(self.info_pedido.get("id"), metodo, self)
+
+
 class ModalDetalleComanda(ctk.CTkToplevel):
     def __init__(self, parent, info_pedido, items_detalle):
         super().__init__(parent)
@@ -64,9 +147,7 @@ class ModalDetalleComanda(ctk.CTkToplevel):
         scrollbar.pack(side="right", fill="y")
         self.tree_detalle.configure(yscrollcommand=scrollbar.set)
 
-        # Llenar la tabla de detalles
         for item in items_detalle:
-            # item = (dp.id, dp.producto_id, p.nombre, dp.cantidad, dp.precio_unitario, dp.subtotal, dp.nota_plato)
             self.tree_detalle.insert("", "end", values=(
                 item[2],
                 item[3],
@@ -123,9 +204,22 @@ class HistorialPedidosView(ctk.CTkFrame):
         )
         self.lbl_recaudado.pack(side="left", padx=25)
 
+        # Botón para cobrar pedidos pendientes
+        self.btn_cobrar = ctk.CTkButton(
+            self.frame_superior, 
+            text="💳 Cobrar Pedido Pendiente", 
+            font=("Helvetica", 13, "bold"), 
+            fg_color="#28a745", 
+            hover_color="#218838",
+            height=38,
+            command=self._clic_cobrar_pendiente
+        )
+        self.btn_cobrar.pack(side="right", padx=(10, 0))
+
+        # Botón para ver detalle
         self.btn_ver_detalle = ctk.CTkButton(
             self.frame_superior, 
-            text="👁️ Ver Detalle de Comanda", 
+            text="👁️ Ver Detalle", 
             font=("Helvetica", 13, "bold"), 
             fg_color="#17a2b8", 
             hover_color="#138496",
@@ -140,7 +234,7 @@ class HistorialPedidosView(ctk.CTkFrame):
             font=("Helvetica", 13), 
             fg_color="#6c757d", 
             hover_color="#5a6268", 
-            width=100, 
+            width=90, 
             height=38,
             command=self._clic_refrescar
         )
@@ -170,7 +264,7 @@ class HistorialPedidosView(ctk.CTkFrame):
         self.tree_historial.column("usuario", width=120, anchor="center")
         self.tree_historial.column("metodo_pago", width=100, anchor="center")
         self.tree_historial.column("total", width=110, anchor="e")
-        self.tree_historial.column("estado", width=90, anchor="center")
+        self.tree_historial.column("estado", width=100, anchor="center")
 
         self.tree_historial.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
@@ -182,15 +276,12 @@ class HistorialPedidosView(ctk.CTkFrame):
         if self.controlador and hasattr(self.controlador, "cargar_historial"):
             self.controlador.cargar_historial()
 
-    def _clic_ver_detalle(self):
+    def get_pedido_seleccionado(self):
         seleccion = self.tree_historial.selection()
         if not seleccion:
-            self.mostrar_error("Por favor, seleccione un pedido de la tabla para ver su detalle.")
-            return
-
+            return None
         valores = self.tree_historial.item(seleccion[0])["values"]
-        # valores = [id, fecha, mesa, cliente, usuario, metodo_pago, total, estado]
-        info_pedido = {
+        return {
             "id": valores[0],
             "fecha": valores[1],
             "mesa": valores[2],
@@ -200,8 +291,31 @@ class HistorialPedidosView(ctk.CTkFrame):
             "total": valores[6],
             "estado": valores[7]
         }
+
+    def _clic_ver_detalle(self):
+        info_pedido = self.get_pedido_seleccionado()
+        if not info_pedido:
+            self.mostrar_error("Por favor, seleccione un pedido de la tabla para ver su detalle.")
+            return
+
         if self.controlador and hasattr(self.controlador, "abrir_detalle_pedido"):
             self.controlador.abrir_detalle_pedido(info_pedido)
+
+    def _clic_cobrar_pendiente(self):
+        info_pedido = self.get_pedido_seleccionado()
+        if not info_pedido:
+            self.mostrar_error("Por favor, seleccione un pedido pendiente de la tabla para cobrarlo.")
+            return
+
+        if info_pedido.get("estado") == "Pagado":
+            self.mostrar_exito(f"El Pedido N° {info_pedido.get('id')} ya se encuentra PAGADO.")
+            return
+
+        if self.controlador and hasattr(self.controlador, "iniciar_cobro_pedido"):
+            self.controlador.iniciar_cobro_pedido(info_pedido)
+
+    def abrir_modal_cobro(self, info_pedido, on_confirmar_cb):
+        return ModalCobrarPedido(self, info_pedido, on_confirmar_cb)
 
     def abrir_modal_detalle(self, info_pedido, items_detalle):
         return ModalDetalleComanda(self, info_pedido, items_detalle)
@@ -214,18 +328,20 @@ class HistorialPedidosView(ctk.CTkFrame):
         for p in lista_pedidos:
             # p = (id, cliente, usuario, mesa, metodo_pago, total, estado, fecha)
             monto = float(p[5]) if p[5] else 0.0
-            total_acumulado += monto
+            if p[6] == "Pagado":
+                total_acumulado += monto
+
             self.tree_historial.insert("", "end", values=(
                 p[0],
                 str(p[7])[:19] if p[7] else "-",
                 p[3],
                 p[1] or "Público General",
                 p[2] or "Sistema",
-                p[4],
+                p[4] or "-",
                 f"{monto:.2f}",
                 p[6]
             ))
-        self.lbl_recaudado.configure(text=f"Total Recaudado: S/. {total_acumulado:.2f}")
+        self.lbl_recaudado.configure(text=f"Total Recaudado (Pagado): S/. {total_acumulado:.2f}")
 
     def mostrar_error(self, msg):
         messagebox.showerror("Historial de Pedidos", msg)

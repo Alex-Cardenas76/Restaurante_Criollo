@@ -10,7 +10,7 @@ class PedidosView(ctk.CTkFrame):
         self.grid_rowconfigure(1, weight=1)
 
         # Título de la vista
-        self.lbl_titulo = ctk.CTkLabel(self, text="Gestión de Pedidos y Caja", font=("Helvetica", 22, "bold"))
+        self.lbl_titulo = ctk.CTkLabel(self, text="Punto de Venta y Toma de Comanda", font=("Helvetica", 22, "bold"))
         self.lbl_titulo.grid(row=0, column=0, padx=20, pady=(15, 5), sticky="w")
 
         # Contenedor principal
@@ -28,19 +28,23 @@ class PedidosView(ctk.CTkFrame):
         self.lbl_cliente = ctk.CTkLabel(self.frame_datos, text="Cliente:", font=("Helvetica", 13, "bold"))
         self.lbl_cliente.pack(side="left", padx=(0, 6))
 
-        self.combo_cliente = ctk.CTkComboBox(self.frame_datos, values=["Público General"], width=200)
+        self.combo_cliente = ctk.CTkComboBox(self.frame_datos, values=["Público General"], width=220)
         self.combo_cliente.pack(side="left", padx=(0, 15))
 
-        self.lbl_mesa = ctk.CTkLabel(self.frame_datos, text="Mesa/Ubicación:", font=("Helvetica", 13, "bold"))
+        self.lbl_mesa = ctk.CTkLabel(self.frame_datos, text="Mesa / Ubicación:", font=("Helvetica", 13, "bold"))
         self.lbl_mesa.pack(side="left", padx=(0, 6))
 
-        self.entry_mesa = ctk.CTkEntry(self.frame_datos, placeholder_text="Mesa 01", width=100)
-        self.entry_mesa.pack(side="left", padx=(0, 15))
+        self.combo_mesa = ctk.CTkComboBox(
+            self.frame_datos, 
+            values=["Mesa 01", "Mesa 02", "Mesa 03", "Mesa 04", "Mesa 05", "Mesa 06", "Para Llevar"], 
+            width=210
+        )
+        self.combo_mesa.pack(side="left", padx=(0, 15))
 
-        self.lbl_pago = ctk.CTkLabel(self.frame_datos, text="Pago:", font=("Helvetica", 13, "bold"))
+        self.lbl_pago = ctk.CTkLabel(self.frame_datos, text="Método Pago:", font=("Helvetica", 13, "bold"))
         self.lbl_pago.pack(side="left", padx=(0, 6))
 
-        self.combo_metodo_pago = ctk.CTkComboBox(self.frame_datos, values=["Efectivo", "Yape", "Plin", "Tarjeta"], width=120)
+        self.combo_metodo_pago = ctk.CTkComboBox(self.frame_datos, values=["Efectivo", "Yape", "Plin", "Tarjeta"], width=130)
         self.combo_metodo_pago.pack(side="left")
 
         # -------------------------------------------------------------
@@ -52,7 +56,7 @@ class PedidosView(ctk.CTkFrame):
         self.lbl_plato = ctk.CTkLabel(self.frame_seleccion, text="Plato:", font=("Helvetica", 13, "bold"))
         self.lbl_plato.pack(side="left", padx=(15, 6), pady=10)
 
-        self.combo_plato = ctk.CTkComboBox(self.frame_seleccion, values=["Seleccione plato..."], width=220)
+        self.combo_plato = ctk.CTkComboBox(self.frame_seleccion, values=["Seleccione plato..."], width=230)
         self.combo_plato.pack(side="left", padx=(0, 10), pady=10)
 
         self.lbl_cant = ctk.CTkLabel(self.frame_seleccion, text="Cant:", font=("Helvetica", 13, "bold"))
@@ -117,7 +121,7 @@ class PedidosView(ctk.CTkFrame):
         self.tree_carrito.configure(yscrollcommand=scrollbar.set)
 
         # -------------------------------------------------------------
-        # PANEL 3: TOTALES Y COBRO
+        # PANEL 3: TOTALES
         # -------------------------------------------------------------
         self.frame_caja_simple = ctk.CTkFrame(self.frame_principal, corner_radius=10, fg_color=("gray85", "gray20"))
         self.frame_caja_simple.grid(row=3, column=0, padx=20, pady=(5, 10), sticky="ew")
@@ -129,17 +133,36 @@ class PedidosView(ctk.CTkFrame):
         self.lbl_monto_total = ctk.CTkLabel(self.frame_caja_simple, text="TOTAL A PAGAR: S/. 0.00", font=("Helvetica", 18, "bold"), text_color="#2fa572")
         self.lbl_monto_total.grid(row=0, column=1, padx=20, pady=12, sticky="e")
 
-        self.btn_generar_ticket = ctk.CTkButton(
-            self.frame_principal, 
-            text="Registrar y Cobrar Pedido", 
-            width=320, 
+        # -------------------------------------------------------------
+        # PANEL 4: ACCIONES DUALES (GUARDAR COMANDA vs COBRAR)
+        # -------------------------------------------------------------
+        self.frame_acciones = ctk.CTkFrame(self.frame_principal, fg_color="transparent")
+        self.frame_acciones.grid(row=4, column=0, padx=20, pady=(0, 15))
+
+        self.btn_guardar_comanda = ctk.CTkButton(
+            self.frame_acciones, 
+            text="📝 Guardar Comanda (Pendiente)", 
+            width=270, 
             height=42, 
-            font=("Helvetica", 15, "bold"),
-            fg_color="#007bff",
-            hover_color="#0069d9",
-            command=self._clic_generar_ticket
+            font=("Helvetica", 14, "bold"),
+            fg_color="#f0ad4e",
+            text_color="black",
+            hover_color="#ec971f",
+            command=self._clic_guardar_pendiente
         )
-        self.btn_generar_ticket.grid(row=4, column=0, padx=20, pady=(0, 15))
+        self.btn_guardar_comanda.pack(side="left", padx=(0, 15))
+
+        self.btn_cobrar_instante = ctk.CTkButton(
+            self.frame_acciones, 
+            text="💳 Cobrar al Instante (Pagado)", 
+            width=270, 
+            height=42, 
+            font=("Helvetica", 14, "bold"),
+            fg_color="#28a745",
+            hover_color="#218838",
+            command=self._clic_cobrar_instante
+        )
+        self.btn_cobrar_instante.pack(side="left")
 
     # Eventos de botones
     def _clic_agregar(self):
@@ -150,16 +173,20 @@ class PedidosView(ctk.CTkFrame):
         if self.controlador and hasattr(self.controlador, "quitar_plato_carrito"):
             self.controlador.quitar_plato_carrito()
 
-    def _clic_generar_ticket(self):
-        if self.controlador and hasattr(self.controlador, "manejar_generar_ticket"):
-            self.controlador.manejar_generar_ticket()
+    def _clic_guardar_pendiente(self):
+        if self.controlador and hasattr(self.controlador, "procesar_pedido"):
+            self.controlador.procesar_pedido(estado_deseado="Pendiente")
+
+    def _clic_cobrar_instante(self):
+        if self.controlador and hasattr(self.controlador, "procesar_pedido"):
+            self.controlador.procesar_pedido(estado_deseado="Pagado")
 
     # Métodos accesibles por el Controlador
     def get_cliente_seleccionado(self) -> str:
         return self.combo_cliente.get()
 
     def get_mesa(self) -> str:
-        return self.entry_mesa.get().strip()
+        return self.combo_mesa.get().strip()
 
     def get_metodo_pago(self) -> str:
         return self.combo_metodo_pago.get()
@@ -188,11 +215,16 @@ class PedidosView(ctk.CTkFrame):
         self.combo_cliente.set(valores[0])
 
     def poblar_platos(self, lista_platos):
-        valores = [f"{p[0]} - {p[1]} (S/. {p[3]:.2f})" for p in lista_platos]
+        valores = [f"{p[0]} - {p[1]} (S/. {float(p[3]):.2f})" for p in lista_platos]
         if not valores:
             valores = ["Sin platos disponibles"]
         self.combo_plato.configure(values=valores)
         self.combo_plato.set(valores[0])
+
+    def poblar_mesas(self, lista_mesas):
+        self.combo_mesa.configure(values=lista_mesas)
+        if lista_mesas:
+            self.combo_mesa.set(lista_mesas[0])
 
     def poblar_carrito(self, items_carrito, monto_total, total_cant):
         for fila in self.tree_carrito.get_children():
@@ -210,7 +242,6 @@ class PedidosView(ctk.CTkFrame):
         self.lbl_monto_total.configure(text=f"TOTAL A PAGAR: S/. {monto_total:.2f}")
 
     def limpiar_formulario(self):
-        self.entry_mesa.delete(0, 'end')
         self.entry_nota.delete(0, 'end')
         self.entry_cantidad.delete(0, 'end')
         self.entry_cantidad.insert(0, "1")
@@ -220,7 +251,7 @@ class PedidosView(ctk.CTkFrame):
         self.lbl_monto_total.configure(text="TOTAL A PAGAR: S/. 0.00")
 
     def mostrar_error(self, mensaje: str):
-        messagebox.showerror("Error en Pedido", mensaje)
+        messagebox.showerror("Gestión de Pedido", mensaje)
 
     def mostrar_exito(self, mensaje: str):
-        messagebox.showinfo("Éxito", mensaje)
+        messagebox.showinfo("Gestión de Pedido", mensaje)

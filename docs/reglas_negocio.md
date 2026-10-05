@@ -35,8 +35,13 @@ Este documento establece las **reglas operativas y de validación obligatorias**
   - *Postres*
 * **RN-PRO-04 (Regla de Disponibilidad en Carta):**
   - Todo producto tiene un estado `disponible` (Sí / No).
-  - **Solo los platos con disponibilidad activa (`disponible = True`) aparecen en la pantalla de pedidos** para ser seleccionados por el cajero.
-  - Si un plato se agota en cocina, se cambia su estado a no disponible; el plato no se borra de la base de datos (para no romper el historial de ventas anteriores), pero queda bloqueado para nuevas ventas.
+  - **Solo los platos con disponibilidad activa (`disponible = True`) aparecen en la pantalla de pedidos** para ser seleccionados por el cajero o mozo.
+  - Si un plato se agota en cocina, el personal puede seleccionarlo en la tabla y presionar **"🔄 Disponibilidad"** para conmutar su estado inmediatamente entre `Disponible` y `Agotado`.
+  - El plato no se borra de la base de datos (para preservar la integridad referencial del historial de ventas anteriores), pero queda automáticamente excluido del selector de pedidos.
+* **RN-PRO-05 (Edición de Platos):** El sistema permite modificar el nombre, categoría, precio y disponibilidad de cualquier plato existente seleccionándolo y presionando **"✏️ Editar Plato"**. Los cambios de precio no afectan retroactivamente a los pedidos ya cobrados o registrados con anterioridad (los cuales mantienen su precio unitario histórico en `DETALLE_PEDIDOS`).
+* **RN-PRO-06 (Eliminación con Protección Contable):**
+  - Si un plato no tiene ninguna venta registrada en el historial (`detalle_pedidos`), el sistema permite su eliminación física definitiva tras solicitar confirmación.
+  - Si el plato ya tiene comandas o ventas asociadas, el sistema **bloquea la eliminación** para garantizar la integridad referencial y auditoría contable de la empresa, instruyendo al usuario a utilizar el botón **"🔄 Disponibilidad"** para marcarlo como `Agotado`.
 
 ---
 
@@ -44,13 +49,15 @@ Este documento establece las **reglas operativas y de validación obligatorias**
 
 Este es el **núcleo operativo del restaurante** y debe cumplir las siguientes directrices:
 
-### A. Condiciones previas para armar el pedido
-* **RN-PED-01 (Asignación de Mesa/Ubicación):** Es obligatorio seleccionar o escribir el `numero_mesa` (ej. "Mesa 01", "Mesa 05", "Barra", "Para Llevar"). No se puede procesar una venta sin mesa.
+### A. Condiciones previas y Control de Mesas
+* **RN-PED-01 (Asignación de Mesa/Ubicación):** Es obligatorio seleccionar o escribir el `numero_mesa` (ej. "Mesa 01", "Mesa 05", "Para Llevar"). No se puede procesar una venta sin mesa.
+* **RN-PED-01B (Validación de Mesas Ocupadas vs Libres):**
+  - Toda comanda registrada con estado `Pendiente` bloquea la mesa seleccionada, marcándola como `(Ocupada - Pedido #ID)`.
+  - El sistema **prohíbe asignar una mesa ocupada a un nuevo pedido**, notificando al usuario: *"La mesa X ya está ocupada por el Pedido #ID en estado Pendiente. Debe cobrar o liberar dicha comanda antes de abrir otra."*
+  - Las órdenes con ubicación `"Para Llevar"` quedan exentas de bloqueo de ocupación.
+  - Al cobrar y liquidar la comanda (`estado = 'Pagado'`), la mesa se libera automáticamente y vuelve al estado `(Disponible)`.
 * **RN-PED-02 (Asignación de Cliente):** Es obligatorio seleccionar un cliente del directorio (puede ser un cliente frecuente o el cliente genérico "Público General").
-* **RN-PED-03 (Método de Pago):** Es obligatorio seleccionar la modalidad de cobro antes de confirmar:
-  - *Efectivo*
-  - *Yape / Plin*
-  - *Tarjeta (Débito / Crédito)*
+* **RN-PED-03 (Método de Pago):** Es obligatorio seleccionar la modalidad de cobro al momento de pagar (*Efectivo*, *Yape*, *Plin*, *Tarjeta*).
 
 ### B. Gestión del Carrito Temporal (Memoria RAM)
 * **RN-PED-04 (Cantidad mínima):** La cantidad de platos a agregar debe ser un número entero mayor o igual a 1 (`cantidad >= 1`). No se permiten cantidades en cero, negativas o decimales.
@@ -64,19 +71,23 @@ Este es el **núcleo operativo del restaurante** y debe cumplir las siguientes d
   - Se añade un nuevo plato al pedido.
   - Se modifica la cantidad de un plato existente.
   - Se elimina un plato de la lista temporal.
-* **RN-PED-08 (Validación de Carrito Vacío):** El botón "Registrar Pedido / Cobrar" debe estar bloqueado o rechazar la acción si el carrito no tiene al menos un ítem agregado.
+* **RN-PED-08 (Validación de Carrito Vacío):** Los botones de acción deben rechazar la operación si el carrito no tiene al menos un ítem agregado.
 
-### C. Persistencia Atómica en MySQL
-* **RN-PED-09 (Transacción Atómica - Todo o Nada):** Al confirmar el pedido:
-  1. Se registra la cabecera en `PEDIDOS` con fecha y hora actual del sistema (`datetime.now()`), asignando el cliente, mesa, cajero logueado (`id_usuario`), método de pago, total y estado `Pagado`.
+### C. Persistencia Atómica en MySQL y Flujo Dual (Comanda vs Pago Inmediato)
+* **RN-PED-09 (Flujo Dual: Guardar Comanda vs Cobrar al Instante):**
+  - **Guardar Comanda (`Pendiente`):** Registra el pedido en cocina manteniendo el estado en `Pendiente`. La mesa pasa a estar ocupada. Permite que los comensales consuman y paguen al retirarse.
+  - **Cobrar al Instante (`Pagado`):** Registra el pedido y lo liquida de inmediato en caja con el método de pago seleccionado, dejando la mesa libre.
+* **RN-PED-10 (Transacción Atómica - Todo o Nada):** Al confirmar cualquier pedido:
+  1. Se registra la cabecera en `PEDIDOS` con fecha y hora actual del sistema (`datetime.now()`), asignando el cliente, mesa, cajero logueado (`id_usuario`), método de pago, total y estado correspondiente (`Pendiente` o `Pagado`).
   2. Se obtiene el `id_pedido` generado.
   3. Se inserta cada renglón del pedido en `DETALLE_PEDIDOS` vinculado a dicho `id_pedido`.
-  4. Si ocurre cualquier error durante este proceso, se ejecuta `rollback()`, evitando que queden cobros sin detalle o platos sueltos en la base de datos.
-* **RN-PED-10 (Limpieza y Restablecimiento):** Una vez confirmado el guardado exitoso en base de datos:
+  4. Si ocurre cualquier error durante este proceso, se ejecuta `rollback()`, evitando inconsistencias.
+* **RN-PED-11 (Cobro de Comandas Pendientes desde Historial):** Desde el módulo **"Ver Pedidos" (Historial de Ventas)**, el cajero puede seleccionar cualquier comanda pendiente y presionar **"💳 Cobrar Pedido Pendiente"**. Un diálogo modal solicita el método de pago (`Efectivo`, `Yape`, etc.) y actualiza el pedido a `Pagado`, liberando inmediatamente la mesa asignada.
+* **RN-PED-12 (Limpieza y Restablecimiento):** Una vez confirmado el guardado exitoso en base de datos:
   - Se vacía la lista temporal del carrito en la memoria RAM.
   - Se reinician los campos de mesa, notas y cliente en pantalla.
   - El total visual vuelve a `S/ 0.00`.
-  - Se despliega un cuadro emergente de éxito: *"¡Pedido registrado y cobrado con éxito!"*.
+  - Se actualiza la lista interactiva de mesas libres y ocupadas.
 
 ---
 
@@ -84,7 +95,7 @@ Este es el **núcleo operativo del restaurante** y debe cumplir las siguientes d
 
 | Integrante | Lo que debe asegurar con respecto a estas reglas |
 | :--- | :--- |
-| **Bolivar (Vista)** | Que los campos visuales faciliten el cumplimiento de las reglas (ej. dropdowns con las categorías fijas, interruptores para disponibilidad y cuadros `messagebox` informativos). |
-| **Israel (Controlador)** | Que el código valide cada regla con `re` y `Decimal` antes de llamar a la base de datos, manteniendo los cálculos en RAM exactos. |
-| **Jybran (Modelo / BD)** | Que la base de datos tenga restricciones acordes (`UNIQUE` en DNI, tipos `DECIMAL(10,2)`, llaves foráneas y transacciones con `commit`/`rollback`). |
-| **Alex (Líder / QA)** | Que la aplicación respete cada una de estas reglas al probar el flujo de inicio a fin. |
+| **Bolivar (Vista)** | Formularios modales limpios para Clientes y Productos; pantalla dedicada "Ver Pedidos" con modal de cobro; selector visual de mesas con estado (Disponible)/(Ocupada); botones duales Comanda/Cobrar. |
+| **Israel (Controlador)** | Validación de mesas ocupadas, transiciones de estado Pendiente -> Pagado, conmutación de disponibilidad de platos y precisión en `Decimal`. |
+| **Jybran (Modelo / BD)** | Métodos de consulta y actualización parametrizados (`pagar_pedido`, `obtener_mesas_ocupadas`, `actualizar_disponibilidad`, transacciones atómicas). |
+| **Alex (Líder / QA)** | Verificación integral de flujos de caja, rotación de mesas, auditoría de código y documentación técnica. |

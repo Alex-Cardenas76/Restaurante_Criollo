@@ -144,3 +144,20 @@ def eliminar_producto(producto_id):
         filas = cursor.rowcount
         cursor.close()
         return filas > 0
+
+
+def producto_tiene_pedidos(producto_id):
+    """
+    Verifica si el producto ya está referenciado en el detalle de algún pedido.
+    """
+    try:
+        with conexion_segura() as conexion:
+            cursor = conexion.cursor()
+            sql = "SELECT COUNT(*) FROM detalle_pedidos WHERE producto_id = %s"
+            cursor.execute(sql, (producto_id,))
+            conteo = cursor.fetchone()[0]
+            cursor.close()
+            return conteo > 0
+    except Exception as error:
+        print(f"Error verificando historial del producto {producto_id}: {error}")
+        return True  # Por seguridad en caso de error de BD, asumir que tiene para no romper integridad

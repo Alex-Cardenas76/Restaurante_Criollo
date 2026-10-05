@@ -1,83 +1,78 @@
-# El Rincón Criollo - Sistema de Gestión de Ventas
+# El Rincón Criollo - Sistema de Gestión de Salón y Ventas (MVP)
 
-Aplicación de escritorio desarrollada en **Python** y **MySQL** para la administración comercial y control de pedidos en el restaurante "El Rincón Criollo". Diseñada para operar de forma **100% local** (offline) sin depender de servicios web ni conectividad a internet.
+Aplicación de escritorio desarrollada en **Python** y **MySQL** como **Producto Mínimo Viable (MVP)** para la administración operativa, atención de comensales en salón y control de caja en el restaurante tradicional "El Rincón Criollo". Diseñada para operar de forma local (offline) sin depender de servicios web ni conectividad a internet.
 
 ---
 
-## 📌 Resumen del Proyecto
+## 📌 Alcance Funcional del MVP
 
-El objetivo del equipo es construir un **Producto Mínimo Viable (MVP) operativo al 70%** enfocado en cuatro módulos principales:
-1. **Control de Acceso (Login):** Autenticación de usuarios con permisos y trazabilidad de turnos.
-2. **Catálogos y Directorio:** Registro y listado de clientes frecuentes y la carta de platos criollos (con control de disponibilidad).
-3. **Punto de Venta / Caja (Núcleo):** Toma de pedidos asignando mesa y método de pago, con cálculo aritmético exacto en memoria RAM en tiempo real (`Decimal`). Al confirmar, se realiza el guardado atómico en base de datos desglosado en cabecera (`pedidos`) y renglones (`detalle_pedidos`).
-4. **Dashboard Principal:** Navegación fluida y centralizada entre módulos.
+Este proyecto se enfoca en resolver el flujo operativo crítico de un restaurante mediante un Producto Mínimo Viable (MVP) robusto, cubriendo cinco componentes clave:
+
+1. **Control de Acceso y Seguridad (Login):** Autenticación de personal con perfiles diferenciados (`administrador` y `vendedor`), con retención de sesión activa y trazabilidad del cajero en cada comprobante.
+2. **Directorio y Gestión de Clientes:** Tabla de comensales frecuentes, formulario modal independiente con validación estricta de DNI de 8 dígitos y cliente genérico (`Público General`) para ventas rápidas.
+3. **Carta de Platos Criollos (CRUD Completo):** Catálogo con categorización fija, precios exactos en `Decimal`, conmutación de stock en caliente (`Disponible` / `Agotado`), formulario modal para crear y editar platos, y **protección de integridad contable** que impide eliminar platos con historial de ventas.
+4. **Terminal de Salón, Comandas y Caja:** Asignación y control de mesas con estado dinámico en vivo (`Mesa 01 a 06 (Disponible)` vs `(Ocupada - Pedido #X)`), carrito de compras en memoria RAM con notas especiales para cocina y **botonera de doble acción**:
+   - `📝 Guardar Comanda (Pendiente)`: Envía la orden a cocina y marca la mesa como ocupada para comensales en salón.
+   - `💳 Cobrar al Instante (Pagado)`: Liquida y emite el comprobante de inmediato para despachos rápidos o para llevar.
+5. **Historial de Ventas ("Ver Pedidos"):** Módulo dedicado para auditar los comprobantes emitidos, consultar los platos consumidos (`ModalDetalleComanda`) y liquidar comandas pendientes (`ModalCobrarPedido`), liberando automáticamente la mesa asignada en tiempo real.
 
 ---
 
 ## 👥 Equipo y Distribución de Responsabilidades (MVC + QA)
 
-> [!IMPORTANT]
-> **Lectura Obligatoria para todos los integrantes antes de programar:**
-> Para evitar confusiones, conflictos en el repositorio y cruces de código, **es indispensable que cada miembro lea:**
-> 1. El archivo general de [reglas_negocio.md](file:///C:/Users/ACER/Desktop/Criollo/docs/reglas_negocio.md).
-> 2. Su archivo de rol asignado dentro de la carpeta `docs/` para tener 100% claro qué le corresponde hacer y qué límites técnicos debe respetar.
+El proyecto sigue una estricta separación de responsabilidades bajo el patrón **Modelo - Vista - Controlador (MVC)**:
 
-El proyecto sigue una estricta separación bajo el patrón **Modelo-Vista-Controlador**:
-
-| Integrante | Rol | Capa / Responsabilidad | Documento de Lectura Obligatoria | Carpeta |
+| Integrante | Rol | Capa / Responsabilidad | Documento de Rol | Carpeta Asignada |
 | :--- | :--- | :--- | :--- | :--- |
-| **Jybran** | Modelo / Base de Datos | Scripts SQL, conexión y consultas preparadas. | [rol_jybran.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_jybran.md) | `database/`, `models/` |
-| **Bolivar** | Vista / Interfaz | CustomTkinter, Treeviews, formularios y alertas. | [rol_bolivar.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_bolivar.md) | `views/` |
-| **Israel** | Controlador / Lógica | Reglas de negocio, validaciones (`re`), RAM (`Decimal`). | [rol_israel.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_israel.md) | `controllers/`, `main.py` |
-| **Alex** | Líder / QA y Documentación | Auditoría de reglas, manual técnico y coordinación. | [rol_alex.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_alex.md) | `docs/` |
+| **Jybran** | Modelo / Base de Datos | Scripts DDL, conexión segura y consultas SQL parametrizadas (`%s`). | [rol_jybran.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_jybran.md) | `database/`, `models/` |
+| **Bolivar** | Vista / Interfaz Gráfica | CustomTkinter, modales `CTkToplevel`, `Treeviews`, botones ergonómicos. | [rol_bolivar.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_bolivar.md) | `views/` |
+| **Israel** | Controlador / Lógica | Reglas de negocio, validaciones `re`, cálculos exactos en RAM (`Decimal`). | [rol_israel.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_israel.md) | `controllers/`, `main.py` |
+| **Alex** | Líder / QA y Documentación | Auditoría de reglas, manual técnico oficial, pruebas de calidad y despliegue. | [rol_alex.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_alex.md) | `docs/` |
 
 ---
 
 ## 🚀 Guía de Instalación y Puesta en Marcha
 
-Sigue estos pasos en tu computadora para configurar el entorno de trabajo sin conflictos con el equipo:
+Sigue estos pasos en tu computadora para configurar el entorno de trabajo:
 
 ### 1. Clonar el repositorio
-Abre una terminal y clona el proyecto:
+Abre una terminal (PowerShell o Git Bash) y clona el proyecto:
 ```bash
 git clone https://github.com/Alex-Cardenas76/Restaurante_Criollo.git
 cd Restaurante_Criollo
 ```
 
-### 2. Crear y activar el entorno virtual (`venv`)
-Crea un entorno aislado para que las dependencias se instalen solo en este proyecto:
+### 2. Crear y activar el entorno virtual (`.venv`)
+Crea un entorno aislado para que las dependencias se instalen exclusivamente en este proyecto:
 
-* **En Windows (PowerShell / CMD):**
+* **En Windows (PowerShell):**
 ```powershell
-# Crear el entorno virtual en la carpeta .venv
 python -m venv .venv
-
-# Activar el entorno virtual
 .venv\Scripts\activate
 ```
-*(Al activarse verás el prefijo `(.venv)` a la izquierda de tu terminal).*
+*(Al activarse verás el prefijo `(.venv)` al inicio de la línea de comandos).*
 
-### 3. Instalar las dependencias
+### 3. Instalar las dependencias oficiales
 Con el entorno virtual activado, instala todas las librerías necesarias con un solo comando:
 ```powershell
 pip install -r requirements.txt
 ```
 
 ### 4. Configurar las variables de entorno (`.env`)
-Para que no choquemos con las contraseñas ni puertos de MySQL entre compañeros:
+Para mantener aisladas y seguras las credenciales de base de datos de cada desarrollador:
 1. Copia el archivo `.env.example` y renómbralo como `.env`:
    ```powershell
    copy .env.example .env
    ```
-2. Abre el nuevo archivo `.env` y edita tus credenciales locales de XAMPP (por ejemplo, si tienes contraseña o usas el puerto 3307).
+2. Abre el archivo `.env` y verifica tus credenciales de XAMPP (`DB_HOST=localhost`, `DB_PORT=3306`, `DB_USER=root`, `DB_PASSWORD=`, `DB_NAME=el_rincon_criollo`).
 
-> **Nota importante:** El archivo `.env` está en el `.gitignore`, por lo que **nunca se subirá a GitHub**, protegiendo tu configuración local.
+> **Nota:** El archivo `.env` está registrado en `.gitignore`, por lo que **nunca se subirá a GitHub**, protegiendo tu configuración local.
 
 ### 5. Configurar la Base de Datos en MySQL (XAMPP)
-1. Abre el panel de control de **XAMPP** e inicia los módulos **Apache** y **MySQL**.
-2. Entra a **phpMyAdmin** en tu navegador (`http://localhost/phpmyadmin`).
+1. Inicia **Apache** y **MySQL** desde el panel de control de **XAMPP**.
+2. Ingresa a **phpMyAdmin** en tu navegador (`http://localhost/phpmyadmin`).
 3. Crea la base de datos `el_rincon_criollo`.
-4. Ve a la pestaña **Importar** y selecciona el archivo `database/schema.sql` (o copia y ejecuta su contenido en la pestaña SQL).
+4. Ve a la pestaña **Importar** y selecciona el archivo `database/schema.sql` (o ejecuta su contenido en la pestaña SQL).
 
 ### 6. Ejecutar la aplicación
 Con la base de datos iniciada y el entorno virtual activo:
@@ -86,13 +81,12 @@ python main.py
 ```
 
 ### 7. Credenciales de acceso de prueba:
-* **Usuario:** `admin`
-* **Contraseña:** `admin123`
-*(Rol: Administrador)*
+* **Administrador:** Usuario: `admin` | Contraseña: `admin123`
+* **Vendedor / Cajero:** Usuario: `cajero1` | Contraseña: `cajero123`
 
 ---
 
-## 📂 Estructura del Repositorio
+## 📂 Estructura del Repositorio y Arquitectura
 
 ```text
 Criollo/
@@ -100,52 +94,49 @@ Criollo/
 ├── .env.example                # Plantilla pública de variables de entorno para MySQL
 ├── .gitignore                  # Excluye .venv/, .env y __pycache__/ del repositorio
 ├── README.md                   # Esta guía general
-├── requirements.txt            # Dependencias externas (customtkinter, mysql-connector, etc.)
-├── main.py                     # Archivo de inicio del software
+├── requirements.txt            # Dependencias externas congeladas (customtkinter, mysql-connector, etc.)
+├── main.py                     # Punto de entrada y orquestador del ciclo de vida del software
 │
-├── database/                   # Conexión y script DDL de la BD
-│   ├── conexion.py
-│   └── schema.sql
+├── database/                   # Persistencia y scripts DDL (Jybran)
+│   ├── conexion.py             # Administrador de contexto seguro para MySQL
+│   └── schema.sql              # Estructura de tablas relacionales y datos semilla
 │
-├── models/                     # Consultas SQL por entidad (Jybran)
-│   ├── cliente_model.py
-│   ├── pedido_model.py
-│   ├── producto_model.py
-│   └── usuario_model.py
+├── models/                     # Consultas SQL preparadas y parametrizadas %s (Jybran)
+│   ├── cliente_model.py        # Consultas de comensales
+│   ├── pedido_model.py         # Transacciones atómicas, historial y estado de mesas
+│   ├── producto_model.py       # CRUD de platos y protección referencial
+│   └── usuario_model.py        # Autenticación de personal y roles
 │
-├── views/                      # Pantallas e interfaces CustomTkinter (Bolivar)
-│   ├── clientes_view.py
-│   ├── dashboard_view.py
-│   ├── login_view.py
-│   ├── pedidos_view.py
-│   └── productos_view.py
+├── views/                      # Interfaz gráfica moderna con CustomTkinter (Bolivar)
+│   ├── clientes_view.py        # Directorio de clientes y modal emergente
+│   ├── dashboard_view.py       # Menú lateral y cabecera de sesión
+│   ├── historial_pedidos_view.py # Historial de comprobantes y modales de cobro/detalle
+│   ├── login_view.py           # Pantalla de acceso
+│   ├── pedidos_view.py         # Terminal de pedidos, carrito y mesas
+│   └── productos_view.py       # Catálogo de carta y modal de creación/edición
 │
-├── controllers/                # Lógica de negocio y orquestación en RAM (Israel)
-│   ├── cliente_controller.py
-│   ├── login_controller.py
-│   ├── pedido_controller.py
-│   └── producto_controller.py
+├── controllers/                # Lógica de negocio y precisión en RAM (Israel)
+│   ├── cliente_controller.py   # Validaciones regex (DNI, teléfonos)
+│   ├── login_controller.py     # Manejo de sesión activa
+│   ├── pedido_controller.py    # Motor de pedidos en RAM (Decimal), mesas e historial
+│   └── producto_controller.py  # Orquestador del CRUD de productos y protección contable
 │
-└── docs/                       # Documentación y seguimiento (Alex)
-    ├── El_proyecto.md          # Resumen técnico extenso y diagrama E-R
-    ├── reglas_negocio.md       # Reglas de negocio operativas y validaciones
-    ├── manual_tecnico.md       # Manual técnico y de usuario paso a paso
-    ├── informe_auditoria_integracion.md # Informe de auditoría e integración MVC
-    ├── rol_alex.md             # Funciones de QA y Líder
-    ├── rol_bolivar.md          # Funciones de Vistas
-    ├── rol_israel.md           # Funciones de Controladores
-    └── rol_jybran.md           # Funciones de Modelos y BD
+└── docs/                       # Documentación técnica oficial y auditoría (Alex)
+    ├── El_proyecto.md          # Visión global del sistema y arquitectura
+    ├── manual_tecnico.md       # Manual de ingeniería: justificación MVC, E-R, diccionario y despliegue
+    ├── reglas_negocio.md       # Reglas operativas obligatorias (RN-ACC, RN-CLI, RN-PRO, RN-PED)
+    ├── informe_auditoria_integracion.md # Informe de Aseguramiento de Calidad y Certificación QA
+    ├── rol_alex.md             # Responsabilidades y entregables de Líder/QA
+    ├── rol_bolivar.md          # Responsabilidades y entregables de Vistas
+    ├── rol_israel.md           # Responsabilidades y entregables de Controladores
+    └── rol_jybran.md           # Responsabilidades y entregables de Modelos y BD
 ```
 
 ---
 
-## 📖 Documentación Detallada
-Para conocer a fondo las reglas técnicas, los contratos de comunicación y la matriz de responsabilidades, consulta los archivos en la carpeta [docs/](file:///C:/Users/ACER/Desktop/Criollo/docs/):
-- **Visión General y Diagrama E-R:** [El_proyecto.md](file:///C:/Users/ACER/Desktop/Criollo/docs/El_proyecto.md)
-- **Manual Técnico y de Usuario:** [manual_tecnico.md](file:///C:/Users/ACER/Desktop/Criollo/docs/manual_tecnico.md)
-- **Informe de Auditoría e Integración:** [informe_auditoria_integracion.md](file:///C:/Users/ACER/Desktop/Criollo/docs/informe_auditoria_integracion.md)
-- **Reglas de Negocio del Sistema:** [reglas_negocio.md](file:///C:/Users/ACER/Desktop/Criollo/docs/reglas_negocio.md)
-- **Rol de Jybran (Base de Datos):** [rol_jybran.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_jybran.md)
-- **Rol de Bolivar (Vistas):** [rol_bolivar.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_bolivar.md)
-- **Rol de Israel (Controladores):** [rol_israel.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_israel.md)
-- **Rol de Alex (QA y Líder):** [rol_alex.md](file:///C:/Users/ACER/Desktop/Criollo/docs/rol_alex.md)
+## 📖 Documentación Técnica Oficial
+Para un análisis exhaustivo de la ingeniería de software detrás del proyecto, consulta los documentos especializados en la carpeta [docs/](file:///C:/Users/ACER/Desktop/Criollo/docs/):
+- **Fundamentos de Ingeniería y Buenas Prácticas:** Consulta [manual_tecnico.md](file:///C:/Users/ACER/Desktop/Criollo/docs/manual_tecnico.md) (Sección 1.1) para la explicación formal de por qué se adoptó el patrón MVC, por qué existe `main.py`, la necesidad de aislar con `.venv`, la portabilidad con `requirements.txt` y la seguridad con `.env`.
+- **Diagrama Entidad-Relación y Diccionario de Datos:** En [manual_tecnico.md](file:///C:/Users/ACER/Desktop/Criollo/docs/manual_tecnico.md) (Secciones 2 y 3).
+- **Reglas de Negocio Operativas:** En [reglas_negocio.md](file:///C:/Users/ACER/Desktop/Criollo/docs/reglas_negocio.md).
+- **Informe de Certificación de Calidad (QA):** En [informe_auditoria_integracion.md](file:///C:/Users/ACER/Desktop/Criollo/docs/informe_auditoria_integracion.md).

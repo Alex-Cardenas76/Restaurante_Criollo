@@ -122,3 +122,31 @@ def actualizar_estado_pedido(pedido_id, nuevo_estado):
         filas = cursor.rowcount
         cursor.close()
         return filas > 0
+
+
+def pagar_pedido(pedido_id, metodo_pago):
+    """
+    Marca un pedido como 'Pagado' y actualiza el método de pago utilizado.
+    """
+    with conexion_segura() as conexion:
+        cursor = conexion.cursor()
+        sql = "UPDATE pedidos SET estado = 'Pagado', metodo_pago = %s WHERE id = %s"
+        cursor.execute(sql, (metodo_pago, pedido_id))
+        conexion.commit()
+        filas = cursor.rowcount
+        cursor.close()
+        return filas > 0
+
+
+def obtener_mesas_ocupadas():
+    """
+    Devuelve un diccionario {mesa: id_pedido} con las mesas que tienen
+    un pedido activo en estado 'Pendiente'.
+    """
+    with conexion_segura() as conexion:
+        cursor = conexion.cursor()
+        sql = "SELECT mesa, id FROM pedidos WHERE estado = 'Pendiente'"
+        cursor.execute(sql)
+        filas = cursor.fetchall()
+        cursor.close()
+        return {str(f[0]): f[1] for f in filas}

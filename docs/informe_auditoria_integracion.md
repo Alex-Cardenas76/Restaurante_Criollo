@@ -1,92 +1,85 @@
-# Informe de Auditoría Técnica e Integración MVC
+# Informe de Aseguramiento de Calidad y Certificación Funcional (QA)
 
-**Proyecto:** El Rincón Criollo - Sistema de Gestión de Ventas (MVP)  
-**Líder / QA:** Alex Cárdenas  
-**Fecha:** 04 de Octubre de 2026  
-**Rama de Integración:** `main`
+**Proyecto:** El Rincón Criollo - Sistema de Gestión de Salón y Ventas (MVP)  
+**Líder / Auditor de Calidad (QA):** Alex Cárdenas  
+**Fecha de Certificación:** Octubre de 2026  
+**Entorno de Pruebas:** Python 3.10+, CustomTkinter, MySQL 8.0 (XAMPP), Windows 11  
 
 ---
 
 ## 1. Resumen Ejecutivo
-El presente informe documenta la auditoría técnica realizada sobre los aportes entregados por cada integrante del equipo (**Jybran**, **Bolivar** e **Israel**), los hallazgos identificados en sus respectivas capas (Modelo, Vista y Controlador), la resolución del conflicto de historiales en Git (`unrelated histories`) y el proceso de cableado y ensamble final en [main.py](file:///C:/Users/ACER/Desktop/Criollo/main.py) para alcanzar el **Producto Mínimo Viable (MVP) funcional al 70%**.
+El presente informe formaliza los resultados de la auditoría técnica y funcional de extremo a extremo (End-to-End) realizada sobre el **Producto Mínimo Viable (MVP)** del sistema de restaurante **"El Rincón Criollo"**. 
+
+La evaluación certifica que la arquitectura **Modelo - Vista - Controlador (MVC)** se encuentra implementada con total separación de responsabilidades entre los módulos de **Jybran** (Base de Datos / Modelos), **Bolivar** (Vistas / Interfaz Gráfica) e **Israel** (Controladores / Lógica y RAM), cumpliendo cabalmente con todos los requerimientos funcionales establecidos para el MVP.
 
 ---
 
-## 2. Auditoría Detallada por Integrante
+## 2. Matriz de Auditoría y Verificación por Módulos
 
-### A. Jybran (Capa de Persistencia / Modelos y Base de Datos)
-* **Carpetas asignadas:** `database/` y `models/`
-* **Commits auditados:** `f328c40` e `130dec2`
-* **Cumplimiento de límites:** **100%**. No modificó archivos de vistas ni controladores.
+### A. Módulo de Acceso, Seguridad y Sesión
+* **Alcance auditado:** Validación de credenciales, control de errores y trazabilidad de sesión activa.
+* **Pruebas ejecutadas:**
+  - Intento de ingreso con campos vacíos $\rightarrow$ **Bloqueado** con alerta nativa clara.
+  - Ingreso con contraseña errónea $\rightarrow$ **Rechazado** limpiando la clave y conservando el usuario.
+  - Ingreso exitoso con perfiles `admin` (rol Administrador) y `cajero1` (rol Vendedor) $\rightarrow$ **Aprobado**.
+* **Resultado:** La sesión activa retiene en memoria `{id_usuario, usuario, rol}` y el encabezado del Dashboard refleja la identidad del usuario en tiempo real. Cada pedido registrado asocia el `usuario_id` del cajero responsable.
 
-#### Hallazgos y Correcciones Aplicadas:
-1. **Seguridad SQL:** Uso estricto de sentencias preparadas con parámetros seguros (`%s`), previniendo inyecciones SQL en todas las operaciones.
-2. **Atomicidad en Pedidos:** Implementación de bloques transaccionales con `commit()` y `rollback()` para garantizar que la cabecera del pedido y los renglones de detalle se guarden juntos o ninguno en caso de fallo.
-3. **Ajustes al Esquema Relacional ([schema.sql](file:///C:/Users/ACER/Desktop/Criollo/database/schema.sql)):**
-   - Se añadió la columna `categoria VARCHAR(50)` en `PRODUCTOS` para permitir el filtrado de la carta (*Entradas, Platos de Fondo, Guarniciones, Bebidas, Postres*).
-   - Se añadieron `precio_unitario DECIMAL(10,2)` y `nota_plato VARCHAR(150)` en `DETALLE_PEDIDOS` para registrar observaciones de cocina y auditoría de precios.
-   - Se modificó la columna `mesa` de `INT` a `VARCHAR(20)` en `PEDIDOS` para soportar identificadores reales como *"Mesa 01"* o *"Barra"*.
-   - Se añadió la restricción `UNIQUE` en el `dni` de `CLIENTES` para evitar clientes duplicados.
-   - Se incorporaron semillas de datos iniciales (*usuario administrador `admin`/`admin123`*, *cliente genérico `Público General`* y *11 platos criollos*).
-4. **Resiliencia de Conexión:** Creación del manejador de contexto `conexion_segura()` en [conexion.py](file:///C:/Users/ACER/Desktop/Criollo/database/conexion.py), protegiendo contra caídas de XAMPP mediante `int(os.getenv("DB_PORT", 3306))`.
+### B. Módulo de Clientes (Directorio y Ventas Rápidas)
+* **Alcance auditado:** Validación de formatos mediante expresiones regulares (`re`), prevención de duplicidad y soporte de cliente genérico.
+* **Pruebas ejecutadas:**
+  - Ingreso de DNI con letras, espacios o longitud distinta a 8 dígitos $\rightarrow$ **Bloqueado** por regex (`^\d{8}$`).
+  - Intento de registrar un DNI ya existente en MySQL $\rightarrow$ **Rechazado** capturando el error de clave única.
+  - Apertura del modal `ModalFormularioCliente` $\rightarrow$ Ventana emergente centrada con botones ergonómicos (`height=44`). Al guardar, se refresca la tabla automáticamente y el modal se cierra de forma limpia.
+  - Cliente genérico `Público General` (DNI: `00000000`) $\rightarrow$ Disponible por defecto para despachos rápidos.
+* **Resultado:** Cumplimiento total de las reglas `RN-CLI-01` a `RN-CLI-05`.
 
----
+### C. Módulo de Carta Gastronómica y Productos Criollos (CRUD Completo)
+* **Alcance auditado:** Ciclo de vida completo de platos criollos, precisión de precios con `Decimal` y protección de integridad contable.
+* **Pruebas ejecutadas:**
+  - **Creación (`+ Nuevo Plato`):** Validación de precio strictly $> 0.00$ y asignación de categoría fija.
+  - **Edición (`✏️ Editar Plato`):** Selección de plato en el `Treeview` y apertura del modal con datos precargados. Modificación exitosa de nombre y precio en MySQL.
+  - **Conmutación de Stock (`🔄 Disponibilidad`):** Alternancia en caliente entre `Disponible` y `Agotado`. Los platos agotados quedan automáticamente excluidos del selector de toma de pedidos en caja.
+  - **Eliminación con Protección Contable (`🗑️ Eliminar`):**
+    - Plato sin ventas previas $\rightarrow$ Confirmación mediante `askyesno` y borrado físico definitivo.
+    - Plato con comandas o pedidos registrados en el historial $\rightarrow$ **Bloqueo preventivo** informando al usuario que no se puede eliminar para no romper los reportes contables, recomendando marcarlo como `Agotado`.
+* **Resultado:** Cumplimiento total de las reglas `RN-PRO-01` a `RN-PRO-06`.
 
-### B. Bolivar (Capa de Presentación / Vistas CustomTkinter)
-* **Carpeta asignada:** `views/`
-* **Commit auditado:** `07f37d7` (`feat/bolivar-views`)
-* **Cumplimiento de límites en código:** **100%**. El único código nuevo programado pertenece a la interfaz gráfica.
+### D. Módulo de Terminal de Pedidos, Salón y Mesas
+* **Alcance auditado:** Carrito en RAM con precisión matemática, control de rotación de mesas y flujo dual comanda/pago.
+* **Pruebas ejecutadas:**
+  - **Cálculos en RAM con `Decimal`:** Adición de múltiples unidades de platos con subtotales y notas especiales de cocina. Discrepancia aritmética: **S/. 0.00** (cero pérdida de céntimos).
+  - **Validación de Mesas Ocupadas vs Libres:**
+    - Registro de comanda mediante `📝 Guardar Comanda (Pendiente)`.
+    - La mesa asignada cambia su estado a `(Ocupada - Pedido #ID)`.
+    - Intento de abrir un nuevo pedido en dicha mesa $\rightarrow$ **Bloqueado** con alerta informativa de comanda activa.
+    - Las órdenes para despacho rápido (`Para Llevar`) no generan bloqueo de salón.
+  - **Cobro Inmediato (`💳 Cobrar al Instante`):** Registro de venta liquidada en el acto, dejando la mesa libre.
+  - **Transaccionalidad en MySQL:** Verificación en base de datos de que cabecera (`pedidos`) y detalle (`detalle_pedidos`) se guarden bajo bloque atómico (`commit`/`rollback`).
+* **Resultado:** Cumplimiento total de las reglas `RN-PED-01` a `RN-PED-10`.
 
-#### Hallazgos y Resolución del Incidente en Git:
-1. **Incidente técnico:** Al intentar fusionar la rama (`git merge feat/bolivar-views`), Git arrojó el error crítico:
-   ```text
-   fatal: refusing to merge unrelated histories
-   ```
-2. **Causa raíz:** Bolivar no creó su rama partiendo del historial del repositorio clonado, sino que inicializó un repositorio independiente (`git init`) sobre una copia estática del proyecto, generando un commit raíz sin ancestro común con `main`.
-3. **Resolución aplicada:** Se ejecutó una fusión estratégica:
-   ```bash
-   git merge feat/bolivar-views --allow-unrelated-histories -X ours
-   ```
-   Esto permitió unir los dos historiales y, mediante la estrategia `-X ours`, se preservaron intactos los modelos y controladores de `main`, extrayendo de forma limpia y exclusiva los archivos de la carpeta `views/`.
-4. **Mejoras aplicadas a las vistas:**
-   - En [login_view.py](file:///C:/Users/ACER/Desktop/Criollo/views/login_view.py): Se corrigió `get_usuario()` para que no forzara sufijos `@gmail.com`, permitiendo el acceso del usuario `admin`.
-   - En [dashboard_view.py](file:///C:/Users/ACER/Desktop/Criollo/views/dashboard_view.py): Se incorporó el botón **"Cerrar Sesión"** en el menú lateral.
-   - En [pedidos_view.py](file:///C:/Users/ACER/Desktop/Criollo/views/pedidos_view.py): Se implementó el panel de selección de platos, notas de cocina, método de pago y botones para agregar/quitar ítems del carrito en memoria RAM.
-
----
-
-### C. Israel (Capa de Lógica / Controladores y Reglas de Negocio)
-* **Carpetas asignadas:** `controllers/` y `main.py`
-* **Commit auditado:** `8e646ae` (`feat/israel-controladores`)
-* **Cumplimiento de límites:** **100%**. Solo programó en su área asignada.
-
-#### Hallazgos y Ensamble Realizado:
-1. **Reglas de Negocio:** Validación de DNI de 8 dígitos y teléfonos con expresiones regulares (`re`).
-2. **Precisión Financiera:** Uso obligatorio de `Decimal` en todos los cálculos de dinero, previniendo errores de redondeo de punto flotante en la caja.
-3. **Estado del Carrito en RAM:** Gestión dinámica de listas de diccionarios en memoria RAM para actualizar subtotales y total general en tiempo real.
-4. **Alineación de interfaces:** Se sincronizaron las firmas de los métodos entre los controladores y las funciones de los modelos de Jybran (por ejemplo: paso de parámetros limpios en lugar de diccionarios planos incompatibles).
+### E. Módulo Historial de Ventas ("Ver Pedidos") y Cierre de Cuentas
+* **Alcance auditado:** Auditoría general de ventas y liquidación de comandas pendientes.
+* **Pruebas ejecutadas:**
+  - Visualización completa de todos los comprobantes emitidos con fecha, mesa, cliente, total y estado (`Pagado` / `Pendiente`).
+  - Botón `🔍 Ver Detalle de Comanda`: Despliegue del modal `ModalDetalleComanda` con los platos consumidos y notas de cocina de la orden.
+  - Botón `💳 Cobrar Pedido Pendiente`: Despliegue del modal `ModalCobrarPedido`, selección de forma de pago (*Efectivo, Yape, Tarjeta*) y confirmación de cobro.
+  - **Liberación de Mesa en Tiempo Real:** Al cobrarse la comanda, el pedido pasa a `Pagado` y la mesa asociada queda **inmediatamente disponible** para recibir nuevos comensales.
+* **Resultado:** Cumplimiento total de las reglas `RN-PED-11` y `RN-PED-12`.
 
 ---
 
-## 3. Ensamble de la Aplicación ([main.py](file:///C:/Users/ACER/Desktop/Criollo/main.py))
+## 3. Estado de Certificación del Sistema
 
-Se sustituyó el mensaje temporal de prueba por el ciclo de vida completo de la aplicación:
-1. **Arranque:** Inicializa la ventana principal centrada (1020x680) y renderiza [LoginView](file:///C:/Users/ACER/Desktop/Criollo/views/login_view.py).
-2. **Autenticación:** Valida credenciales contra MySQL mediante [LoginController](file:///C:/Users/ACER/Desktop/Criollo/controllers/login_controller.py).
-3. **Transición:** Al autenticarse, destruye la pantalla de login y monta [DashboardView](file:///C:/Users/ACER/Desktop/Criollo/views/dashboard_view.py).
-4. **Navegación Dinámica:** Alterna entre [ClientesView](file:///C:/Users/ACER/Desktop/Criollo/views/clientes_view.py), [ProductosView](file:///C:/Users/ACER/Desktop/Criollo/views/productos_view.py) y [PedidosView](file:///C:/Users/ACER/Desktop/Criollo/views/pedidos_view.py), refrescando los datos desde la base de datos en cada navegación.
-5. **Cierre de Sesión:** Permite regresar al Login restableciendo la memoria del sistema.
-
----
-
-## 4. Estado de Certificación del MVP (70% Funcional)
-
-| Módulo Evaluado | Estado | Evidencia / Comprobación |
+| Criterio de Calidad | Estado | Observación Técnica |
 | :--- | :---: | :--- |
-| **Acceso y Seguridad** | ✅ APROBADO | Login operativo con usuario `admin`/`admin123`. Bloqueo ante campos vacíos o clave errónea. |
-| **Directorio de Clientes** | ✅ APROBADO | Validación de DNI numérico (8 dígitos), registro en MySQL y visualización en tabla `Treeview`. |
-| **Catálogo de Carta Criolla** | ✅ APROBADO | Registro con categorías fijas, validación de precio positivo con `Decimal` y visualización de disponibilidad. |
-| **Gestión de Pedidos / Caja** | ✅ APROBADO | Selección de cliente, mesa y método de pago; cálculo en RAM en tiempo real de subtotales/totales; guardado atómico en cabecera y detalle. |
-| **Arquitectura y Código** | ✅ APROBADO | 0 errores de sintaxis, compilación limpia en Python y repositorio sincronizado. |
+| **Separación de Responsabilidades MVC** | ✅ CONFORME | Vistas sin SQL, Modelos sin GUI, Controladores orquestando lógica y RAM. |
+| **Integridad de Base de Datos** | ✅ CONFORME | Sentencias preparadas (`%s`), transacciones atómicas y protección referencial. |
+| **Precisión Financiera** | ✅ CONFORME | Uso riguroso de `decimal.Decimal` en todas las operaciones monetarias. |
+| **Usabilidad y Ergonomía** | ✅ CONFORME | Modales flotantes desacoplados, botones grandes (`height=44`) y textos nítidos. |
+| **Flujo Comercial Completo** | ✅ CONFORME | Ciclo cerrado de salón: Comanda $\rightarrow$ Cocina $\rightarrow$ Mesa Ocupada $\rightarrow$ Cobro $\rightarrow$ Mesa Libre. |
+| **Compilación y Ejecución** | ✅ CONFORME | 0 errores de sintaxis en `py_compile`, arranque limpio con `python main.py`. |
 
-**Conclusión:** El sistema cumple cabalmente con todos los criterios de diseño, separación de responsabilidades MVC y requerimientos del MVP al 70%.
+---
+
+## 4. Dictamen Final de QA
+Se certifica la **Aprobación Formal del Producto Mínimo Viable (MVP)** del sistema "El Rincón Criollo". La solución se encuentra estable, documentada y lista para su sustentación y pruebas de validación con usuarios.
