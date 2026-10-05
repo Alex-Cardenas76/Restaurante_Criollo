@@ -2,8 +2,9 @@ from decimal import Decimal
 from models import cliente_model, producto_model, pedido_model
 
 class PedidoController:
-    def __init__(self, vista, sesion_activa=None):
+    def __init__(self, vista, sesion_activa=None, vista_historial=None):
         self.vista = vista
+        self.vista_historial = vista_historial
         self.sesion_activa = sesion_activa or {"id_usuario": 1, "usuario": "admin", "rol": "administrador"}
         self.carrito = []
         self.clientes_map = {}
@@ -12,6 +13,12 @@ class PedidoController:
     def establecer_sesion(self, sesion):
         self.sesion_activa = sesion
 
+    def establecer_vista_historial(self, vista_historial):
+        self.vista_historial = vista_historial
+
+    # =========================================================================
+    # LÓGICA DE PUNTO DE VENTA Y CAJA (NUEVO PEDIDO)
+    # =========================================================================
     def cargar_datos_iniciales(self):
         try:
             # 1. Cargar clientes
@@ -78,7 +85,6 @@ class PedidoController:
             return
 
         id_producto_quitar = int(valores[0])
-        # Remover la primera ocurrencia de ese plato en el carrito
         for i, item in enumerate(self.carrito):
             if item["id_producto"] == id_producto_quitar:
                 del self.carrito[i]
@@ -104,7 +110,6 @@ class PedidoController:
         cliente_str = self.vista.get_cliente_seleccionado()
         id_cliente = self.clientes_map.get(cliente_str)
         if not id_cliente:
-            # Tomar el primer cliente o fallback a 1
             id_cliente = list(self.clientes_map.values())[0] if self.clientes_map else 1
 
         metodo_pago = self.vista.get_metodo_pago()
@@ -143,7 +148,31 @@ class PedidoController:
                     f"Método de pago: {metodo_pago}\n"
                     f"Total Pagado: S/. {total:.2f}"
                 )
+                if self.vista_historial:
+                    self.cargar_historial()
             else:
                 self.vista.mostrar_error("No se pudo registrar el pedido en la base de datos.")
         except Exception as error:
             self.vista.mostrar_error(f"Error en la transacción del pedido: {error}")
+
+    # =========================================================================
+    # LÓGICA DE HISTORIAL DE PEDIDOS Y CONSULTA DE COMANDAS
+    # =========================================================================
+    def cargar_historial(self):
+        if not self.vista_historial:
+            return
+        try:
+            pedidos = pedido_model.listar_pedidos()
+            self.vista_historial.poblar_tabla(pedidos)
+        except Exception as error:
+            self.vista_historial.mostrar_error(f"Error al cargar historial: {error}")
+
+    def abrir_detalle_pedido(self, info_pedido):
+        if not self.vista_historial:
+            return
+        pedido_id = info_pedido.get("id")
+        try:
+            detalles = pedido_model.listar_detalle_pedido(pedido_id)
+            self.vista_historial.abrir_modal_detalle(info_pedido, detalles)
+        except Exception as error:
+            self.vista_historial.mostrar_error(f"Error al obtener detalle del pedido: {error}")

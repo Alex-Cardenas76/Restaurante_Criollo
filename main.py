@@ -5,6 +5,7 @@ from views.dashboard_view import DashboardView
 from views.clientes_view import ClientesView
 from views.productos_view import ProductosView
 from views.pedidos_view import PedidosView
+from views.historial_pedidos_view import HistorialPedidosView
 
 from controllers.login_controller import LoginController
 from controllers.cliente_controller import ClienteController
@@ -15,8 +16,8 @@ class AplicacionCriollo:
     def __init__(self, root):
         self.root = root
         self.root.title("El Rincón Criollo - Sistema de Gestión")
-        self.root.geometry("1020x680")
-        self.root.minsize(960, 600)
+        self.root.geometry("1060x700")
+        self.root.minsize(980, 620)
 
         # Configuración estética moderna
         ctk.set_appearance_mode("System")
@@ -57,32 +58,37 @@ class AplicacionCriollo:
 
         contenedor = dashboard.obtener_contenedor_contenido()
 
-        # 2. Inicializar las tres vistas hijas dentro del contenedor del dashboard
+        # 2. Inicializar las vistas dentro del contenedor del dashboard
         self.vistas_modulos = {}
         self.controladores_modulos = {}
 
-        # Módulo Clientes
+        # Módulo 1: Punto de Venta / Caja
+        vista_ped = PedidosView(contenedor)
+        vista_hist = HistorialPedidosView(contenedor)
+        ctrl_ped = PedidoController(vista_ped, sesion_activa=self.sesion_activa, vista_historial=vista_hist)
+        vista_ped.controlador = ctrl_ped
+        vista_hist.controlador = ctrl_ped
+
+        self.vistas_modulos["pedidos"] = vista_ped
+        self.vistas_modulos["historial"] = vista_hist
+        self.controladores_modulos["pedidos"] = ctrl_ped
+        self.controladores_modulos["historial"] = ctrl_ped
+
+        # Módulo 2: Directorio de Clientes
         vista_cli = ClientesView(contenedor)
         ctrl_cli = ClienteController(vista_cli)
         vista_cli.controlador = ctrl_cli
         self.vistas_modulos["clientes"] = vista_cli
         self.controladores_modulos["clientes"] = ctrl_cli
 
-        # Módulo Productos
+        # Módulo 3: Carta de Productos Criollos
         vista_prod = ProductosView(contenedor)
         ctrl_prod = ProductoController(vista_prod)
         vista_prod.controlador = ctrl_prod
         self.vistas_modulos["productos"] = vista_prod
         self.controladores_modulos["productos"] = ctrl_prod
 
-        # Módulo Pedidos y Caja
-        vista_ped = PedidosView(contenedor)
-        ctrl_ped = PedidoController(vista_ped, sesion_activa=self.sesion_activa)
-        vista_ped.controlador = ctrl_ped
-        self.vistas_modulos["pedidos"] = vista_ped
-        self.controladores_modulos["pedidos"] = ctrl_ped
-
-        # Abrir por defecto la pantalla de Caja / Pedidos
+        # Abrir por defecto la pantalla de Caja / Punto de Venta
         self.cambiar_modulo("pedidos")
 
     def cambiar_modulo(self, seccion):
@@ -99,12 +105,14 @@ class AplicacionCriollo:
         if vista_seleccionada:
             vista_seleccionada.pack(fill="both", expand=True)
 
-            if seccion == "clientes":
+            if seccion == "pedidos":
+                self.controladores_modulos["pedidos"].cargar_datos_iniciales()
+            elif seccion == "historial":
+                self.controladores_modulos["historial"].cargar_historial()
+            elif seccion == "clientes":
                 self.controladores_modulos["clientes"].cargar_clientes()
             elif seccion == "productos":
                 self.controladores_modulos["productos"].cargar_productos()
-            elif seccion == "pedidos":
-                self.controladores_modulos["pedidos"].cargar_datos_iniciales()
 
 def main():
     root = ctk.CTk()

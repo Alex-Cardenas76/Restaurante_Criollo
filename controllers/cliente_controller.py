@@ -8,14 +8,16 @@ class ClienteController:
     def cargar_clientes(self):
         try:
             clientes = cliente_model.listar_clientes()
-            # Formatear tuplas: (dni, nombre, telefono) para la tabla de la vista
-            filas = [(c[2], c[1], c[3]) for c in clientes]
+            # Formatear: (id, dni, nombre, telefono)
+            filas = [(c[0], c[2], c[1], c[3] or "-") for c in clientes]
             self.vista.poblar_tabla(filas)
         except Exception as error:
             self.vista.mostrar_error(f"Error al listar clientes: {error}")
 
-    def guardar_cliente(self):
-        datos = self.vista.get_datos_formulario()
+    def abrir_modal_nuevo(self):
+        self.vista.abrir_modal_registro(self.procesar_guardar_modal)
+
+    def procesar_guardar_modal(self, datos, modal):
         dni = datos.get("dni", "").strip()
         nombres = datos.get("nombres", "").strip()
         telefono = datos.get("telefono", "").strip()
@@ -26,7 +28,7 @@ class ClienteController:
             return
 
         if len(nombres) < 3 or not re.fullmatch(r'[A-Za-zÁ-Úá-úÑñ\s]+', nombres):
-            self.vista.mostrar_error("El nombre debe tener al menos 3 caracteres y solo letras.")
+            self.vista.mostrar_error("El nombre debe tener al menos 3 caracteres y solo contener letras.")
             return
 
         if telefono and not re.fullmatch(r'9\d{8}', telefono):
@@ -37,14 +39,14 @@ class ClienteController:
             # Comprobar unicidad de DNI
             existente = cliente_model.buscar_cliente_por_dni(dni)
             if existente:
-                self.vista.mostrar_error("El DNI ya se encuentra registrado en el sistema.")
+                self.vista.mostrar_error(f"El DNI {dni} ya se encuentra registrado.")
                 return
 
             nuevo_id = cliente_model.insertar_cliente(nombres, dni, telefono)
             if nuevo_id:
+                modal.destroy()  # Cierra la ventana emergente
                 self.vista.mostrar_exito("Cliente registrado correctamente.")
-                self.vista.limpiar_formulario()
-                self.cargar_clientes()
+                self.cargar_clientes()  # Actualiza la tabla automáticamente
             else:
                 self.vista.mostrar_error("No se pudo registrar el cliente en la base de datos.")
         except Exception as error:

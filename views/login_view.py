@@ -18,13 +18,17 @@ class LoginView(ctk.CTkFrame):
         self.lbl_titulo = ctk.CTkLabel(self.frame_centro, text="El Rincón Criollo", font=("Helvetica", 24, "bold"))
         self.lbl_titulo.grid(row=0, column=0, padx=20, pady=(40, 20))
 
-        # Campo de Usuario con sugerencia @gmail.com dentro
-        self.entry_usuario = ctk.CTkEntry(self.frame_centro, placeholder_text="usuario@gmail.com", width=280, height=40)
+        # Campo de Usuario
+        self.entry_usuario = ctk.CTkEntry(self.frame_centro, placeholder_text="Usuario (ej: admin)", width=280, height=40)
         self.entry_usuario.grid(row=1, column=0, padx=20, pady=10)
 
         # Campo de Contraseña
         self.entry_password = ctk.CTkEntry(self.frame_centro, placeholder_text="Contraseña", show="*", width=280, height=40)
         self.entry_password.grid(row=2, column=0, padx=20, pady=10)
+
+        # Vincular tecla Enter para iniciar sesión
+        self.entry_usuario.bind("<Return>", lambda event: self._clic_ingresar())
+        self.entry_password.bind("<Return>", lambda event: self._clic_ingresar())
 
         # Botón estilizado
         self.btn_ingresar = ctk.CTkButton(self.frame_centro, text="Ingresar al Sistema", width=280, height=40, command=self._clic_ingresar)
